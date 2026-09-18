@@ -1,0 +1,42 @@
+export const TaxSettingsData = [
+  {
+    id: "1",
+    Number: "1",
+    Tax_Name: "CGST",
+    Rate: "9%",
+    Type: "Inclusive / Exclusive",
+    Actions: "",
+  },
+  {
+    id: "2",
+    Number: "2",
+    Tax_Name: "SGST",
+    Rate: "9%",
+    Type: "Inclusive / Exclusive",
+    Actions: "",
+  },
+  {
+    id: "3",
+    Number: "3",
+    Tax_Name: "IGST",
+    Rate: "18%",
+    Type: "Inclusive / Exclusive",
+    Actions: "",
+  },
+  {
+    id: "4",
+    Number: "4",
+    Tax_Name: "VAT",
+    Rate: "10%",
+    Type: "Type",
+    Actions: "",
+  },
+  {
+    id: "5",
+    Number: "5",
+    Tax_Name: "Service Tax",
+    Rate: "15%",
+    Type: "Exclusive",
+    Actions: "",
+  },
+];
