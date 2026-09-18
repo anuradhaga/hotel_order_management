@@ -12,7 +12,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      database: process.env.DB_NAME || "hotel_order_management",
+      database: process.env.DB_NAME || "dsschool_hom",
       tablesCount: tables.length,
       counts: {
         outlets: outlets[0]?.count || 0,

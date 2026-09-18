@@ -3,8 +3,8 @@
 -- Venue: Grand Dilara Hotel & Suites
 -- Compliant with SRS v1.0 Specification
 
-CREATE DATABASE IF NOT EXISTS `hotel_order_management` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `hotel_order_management`;
+CREATE DATABASE IF NOT EXISTS `dsschool_hom` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `dsschool_hom`;
 
 -- 1. Table: outlets
 CREATE TABLE IF NOT EXISTS `outlets` (

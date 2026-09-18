@@ -10,9 +10,9 @@ const pool =
   mysql.createPool({
     host: process.env.DB_HOST || "127.0.0.1",
     port: parseInt(process.env.DB_PORT || "3306", 10),
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "hotel_order_management",
+    user: process.env.DB_USER || "dsschool_hom",
+    password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : "Welcome@hom",
+    database: process.env.DB_NAME || "dsschool_hom",
     waitForConnections: true,
     connectionLimit: 15,
     queueLimit: 0,
