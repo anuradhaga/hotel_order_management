@@ -3,9 +3,9 @@ const path = require('path');
 const mysql = require('mysql2/promise');
 
 async function main() {
-  console.log('Connecting to MySQL on 127.0.0.1:3306...');
+  console.log('Connecting to MySQL on 162.215.13.177:3306...');
   const connection = await mysql.createConnection({
-    host: process.env.DB_HOST || '127.0.0.1',
+    host: process.env.DB_HOST || '162.215.13.177',
     port: parseInt(process.env.DB_PORT || '3306', 10),
     user: process.env.DB_USER || 'dsschool_hom',
     password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : 'Welcome@hom',
