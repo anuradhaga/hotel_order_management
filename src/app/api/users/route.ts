@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { hashPassword } from "@/lib/auth";
 
 export async function GET() {
   try {
@@ -60,10 +61,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const hashedPassword = await hashPassword(String(password).trim());
+
     const [result]: any = await pool.execute(
       `INSERT INTO users (username, password_hash, full_name, phone, role_code, outlet_id, is_active)
        VALUES (?, ?, ?, ?, ?, ?, 1)`,
-      [username.trim(), password, full_name.trim(), phone?.trim() || null, role_code, outlet_id || null]
+      [username.trim(), hashedPassword, full_name.trim(), phone?.trim() || null, role_code, outlet_id || null]
     );
 
     return NextResponse.json({
@@ -113,8 +116,9 @@ export async function PUT(req: NextRequest) {
     ];
 
     if (password && String(password).trim()) {
+      const hashed = await hashPassword(String(password).trim());
       query += `, password_hash = ?`;
-      params.push(String(password).trim());
+      params.push(hashed);
     }
 
     query += ` WHERE user_id = ?`;

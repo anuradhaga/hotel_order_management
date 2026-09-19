@@ -6,19 +6,36 @@ import Link from "next/link";
 
 import Toast from "@/core/common/toast/toast";
 import { useAuth } from "../auth-context/authContext";
-import { all_routes } from "../../../routes/all_routes";
+import { getDashboardForRole } from "@/utils/roleRoutes";
 import ImageWithBasePath from "@/core/common/image-with-base-path";
 
 type PasswordField = "password" | "confirmPassword";
 
+const DEMO_ACCOUNTS = [
+  { role: "ADMIN", label: "Admin", username: "admin", pass: "Niranura@1", dest: "/dashboard", badge: "bg-primary" },
+  { role: "WAITER", label: "Waiter", username: "waiter1", pass: "waiter123", dest: "/pos", badge: "bg-info" },
+  { role: "CASHIER", label: "Cashier", username: "cashier1", pass: "cashier123", dest: "/pos", badge: "bg-success" },
+  { role: "CHEF", label: "Chef", username: "chef1", pass: "chef123", dest: "/kitchen", badge: "bg-danger" },
+  { role: "MANAGER", label: "Manager", username: "manager1", pass: "manager123", dest: "/dashboard", badge: "bg-warning text-dark" },
+  { role: "EXPEDITER", label: "Expediter", username: "expediter1", pass: "expediter123", dest: "/kitchen", badge: "bg-secondary" },
+];
+
 const Login = () => {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user, isInitialized } = useAuth();
 
   // Form state
-  const [username, setUsername] = useState("anuradha");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("admin");
+  const [password, setPassword] = useState("Niranura@1");
   const [loading, setLoading] = useState(false);
+
+  // Auto-redirect if already authenticated
+  useEffect(() => {
+    if (isInitialized && user) {
+      const destination = getDashboardForRole(user.role_code);
+      router.replace(destination);
+    }
+  }, [isInitialized, user, router]);
 
   // Toast state
   const [toast, setToast] = useState<{
@@ -65,10 +82,19 @@ const Login = () => {
         return;
       }
 
-      showToast(result.msg || "Login successful! Redirecting...", "success");
+      const roleRoute = getDashboardForRole(result.user?.role_code);
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectUrl = searchParams.get("redirect");
+      const targetUrl =
+        redirectUrl && !redirectUrl.startsWith("/login") ? redirectUrl : roleRoute;
+
+      showToast(
+        `Welcome ${result.user?.full_name || username}! Redirecting to ${targetUrl}...`,
+        "success"
+      );
 
       setTimeout(() => {
-        router.push(all_routes.pos || all_routes.dashboard);
+        router.push(targetUrl);
       }, 500);
     } catch (err: any) {
       showToast(err.message || "An unexpected error occurred", "danger");
@@ -126,6 +152,38 @@ const Login = () => {
                               Please enter your credentials to sign in!
                             </p>
                           </div>
+
+                          {/* Quick Role Switcher for seamless testing */}
+                          <div className="mb-3 p-3 bg-light rounded border">
+                            <div className="d-flex align-items-center justify-content-between mb-2">
+                              <span className="fw-semibold text-uppercase text-secondary" style={{ fontSize: "11px", letterSpacing: "0.5px" }}>
+                                ⚡ Quick Role Login
+                              </span>
+                              <span className="text-muted" style={{ fontSize: "11px" }}>Select to auto-fill</span>
+                            </div>
+                            <div className="d-flex flex-wrap gap-1">
+                              {DEMO_ACCOUNTS.map((acc) => (
+                                <button
+                                  key={acc.username}
+                                  type="button"
+                                  className={`btn btn-xs py-1 px-2 border rounded ${
+                                    username === acc.username ? "btn-dark text-white" : "btn-white"
+                                  }`}
+                                  style={{ fontSize: "11px" }}
+                                  onClick={() => {
+                                    setUsername(acc.username);
+                                    setPassword(acc.pass);
+                                  }}
+                                >
+                                  <span className={`badge ${acc.badge} me-1`} style={{ fontSize: "9px" }}>
+                                    {acc.role}
+                                  </span>
+                                  {acc.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
                           <div className="mb-3">
                             <label className="form-label fw-semibold">
                               Username / Email<span className="text-danger"> *</span>
@@ -135,7 +193,7 @@ const Login = () => {
                               className="form-control"
                               value={username}
                               onChange={(e) => setUsername(e.target.value)}
-                              placeholder="e.g. anuradha, admin, or waiter1"
+                              placeholder="e.g. admin, waiter1, or chef1"
                               autoComplete="username"
                               required
                             />
@@ -173,32 +231,22 @@ const Login = () => {
                               </span>
                             </div>
                           </div>
-                          <div className="d-flex align-items-center justify-content-between mb-4">
-                            <div className="d-flex align-items-center">
-                              <div className="form-check form-check-md mb-0">
-                                <input
-                                  className="form-check-input"
-                                  id="remember_me"
-                                  type="checkbox"
-                                />
-                                <label
-                                  htmlFor="remember_me"
-                                  className="form-check-label text-dark mt-0"
-                                >
-                                  Remember Me
-                                </label>
-                              </div>
-                            </div>
-                            <div className="text-end">
-                              <Link
-                                href={all_routes.forgotPassword}
-                                className="link-primary"
+                          <div className="d-flex align-items-center mb-4">
+                            <div className="form-check form-check-md mb-0">
+                              <input
+                                className="form-check-input"
+                                id="remember_me"
+                                type="checkbox"
+                              />
+                              <label
+                                htmlFor="remember_me"
+                                className="form-check-label text-dark mt-0"
                               >
-                                Forgot Password?
-                              </Link>
+                                Remember Me
+                              </label>
                             </div>
                           </div>
-                          <div className="mb-4">
+                          <div className="mb-3">
                             <button
                               type="submit"
                               className="btn btn-primary w-100 fw-bold"
@@ -213,51 +261,6 @@ const Login = () => {
                                 "Sign In"
                               )}
                             </button>
-                          </div>
-                          <div className="login-or position-relative mb-4 text-center">
-                            <span className="position-relative bg-white px-2 z-2">
-                              or continue with
-                            </span>
-                          </div>
-                          <div className="d-flex align-items-center justify-content-center flex-wrap">
-                            <div className="text-center me-2 flex-fill">
-                              <Link
-                                href="#"
-                                className="btn btn-white d-flex align-items-center justify-content-center shadow"
-                              >
-                                <ImageWithBasePath
-                                  className="img-fluid me-2"
-                                  src="assets/img/icons/google.svg"
-                                  alt="google"
-                                />
-                                Google
-                              </Link>
-                            </div>
-                            <div className="text-center me-2 flex-fill">
-                              <Link
-                                href="#"
-                                className="btn btn-white d-flex align-items-center justify-content-center shadow"
-                              >
-                                <ImageWithBasePath
-                                  className="img-fluid me-2"
-                                  src="assets/img/icons/fb.svg"
-                                  alt="facebook"
-                                />
-                                Facebook
-                              </Link>
-                            </div>
-                          </div>
-                          <div className="text-center mt-4">
-                            <p className="fw-normal mb-0">
-                              Don&apos;t have an account?
-                              <Link
-                                href={all_routes.register}
-                                className="link-primary"
-                              >
-                                {" "}
-                                Sign Up
-                              </Link>
-                            </p>
                           </div>
                         </div>
                       </div>

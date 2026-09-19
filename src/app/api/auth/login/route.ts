@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { verifyPassword, dummyVerify, hashPassword, isBcryptHash } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,7 +37,9 @@ export async function POST(req: NextRequest) {
       [cleanIdentifier, cleanIdentifier]
     );
 
+    // If user does not exist, execute dummyVerify to prevent response-time enumeration
     if (!rows || rows.length === 0) {
+      await dummyVerify(cleanPassword);
       return NextResponse.json(
         { success: false, error: "Invalid username or password." },
         { status: 401 }
@@ -52,14 +55,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Password comparison (plaintext or hashed check)
-    const isPasswordValid = user.password_hash === cleanPassword;
+    // Industry-standard secure password verification
+    const isPasswordValid = await verifyPassword(cleanPassword, user.password_hash);
 
     if (!isPasswordValid) {
       return NextResponse.json(
         { success: false, error: "Invalid username or password." },
         { status: 401 }
       );
+    }
+
+    // Auto-migration: If password was matched against legacy plain text, re-hash immediately to bcrypt
+    if (!isBcryptHash(user.password_hash)) {
+      try {
+        const upgradedHash = await hashPassword(cleanPassword);
+        await pool.execute(
+          "UPDATE users SET password_hash = ? WHERE user_id = ?",
+          [upgradedHash, user.user_id]
+        );
+      } catch (migrationErr) {
+        console.error("Failed to auto-upgrade legacy password hash:", migrationErr);
+      }
     }
 
     const userPayload = {

@@ -40,20 +40,21 @@ const Header = () => {
   }, [themeSettings]);
 
   useEffect(() => {
-    const htmlElement = typeof document !== "undefined" ? document.documentElement : null;
-    const mainWrapper = typeof document !== "undefined" ? document.querySelector(".main-wrapper") : null;
+    if (typeof document === "undefined") return;
+    const htmlElement = document.documentElement;
+    const mainWrapper = document.querySelector(".main-wrapper");
 
     if (mobileSidebar) {
-      htmlElement?.classList?.add("menu-opened");
-      mainWrapper?.classList?.add("slide-nav");
+      if (htmlElement?.classList) htmlElement.classList.add("menu-opened");
+      if (mainWrapper?.classList) mainWrapper.classList.add("slide-nav");
     } else {
-      htmlElement?.classList?.remove("menu-opened");
-      mainWrapper?.classList?.remove("slide-nav");
+      if (htmlElement?.classList) htmlElement.classList.remove("menu-opened");
+      if (mainWrapper?.classList) mainWrapper.classList.remove("slide-nav");
     }
 
     return () => {
-      htmlElement?.classList?.remove("menu-opened");
-      mainWrapper?.classList?.remove("slide-nav");
+      if (htmlElement?.classList) htmlElement.classList.remove("menu-opened");
+      if (mainWrapper?.classList) mainWrapper.classList.remove("slide-nav");
     };
   }, [mobileSidebar]);
 

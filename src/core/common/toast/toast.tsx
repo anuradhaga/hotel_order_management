@@ -1,14 +1,15 @@
 "use client";
-import { useEffect, useRef } from "react";
-import BootstrapToast from "bootstrap/js/dist/toast";
-import Link from "next/link";
+import { useState } from "react";
 
 interface ToastProps {
   msg: string;
   type: "success" | "danger" | "warning" | "info";
+  onClose?: () => void;
 }
 
-export default function Toast({ msg, type }: ToastProps) {
+export default function Toast({ msg, type, onClose }: ToastProps) {
+  const [visible, setVisible] = useState(true);
+
   const typeClasses: Record<ToastProps["type"], string> = {
     success: "bg-success text-white",
     danger: "bg-danger text-white",
@@ -16,22 +17,13 @@ export default function Toast({ msg, type }: ToastProps) {
     info: "bg-info text-white",
   };
 
-  const toastRef = useRef<HTMLDivElement | null>(null);
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setVisible(false);
+    onClose?.();
+  };
 
-  useEffect(() => {
-    if (!toastRef.current) return;
-
-    const bsToast = new BootstrapToast(toastRef.current, {
-      autohide: true,
-      delay: 3000,
-    });
-
-    bsToast.show();
-
-    return () => {
-      bsToast.dispose();
-    };
-  }, [msg, type]);
+  if (!visible) return null;
 
   return (
     <div
@@ -39,24 +31,23 @@ export default function Toast({ msg, type }: ToastProps) {
       style={{ zIndex: 9999 }}
     >
       <div
-        ref={toastRef}
         id="appToast"
-        className={`toast ${typeClasses[type]}`}
+        className={`toast show fade ${typeClasses[type]}`}
         role="alert"
         aria-live="assertive"
         aria-atomic="true"
+        style={{ display: "block" }}
       >
-        {/* Header with close icon */}
-        <div className="toast-body d-flex align-items-center">
-          {msg}
-          <Link
-            href="#"
-            className="btn toats-btn"
-            data-bs-dismiss="toast"
+        <div className="toast-body d-flex align-items-center justify-content-between">
+          <span>{msg}</span>
+          <button
+            type="button"
+            className="btn toats-btn text-white p-0 ms-2 border-0 bg-transparent"
+            onClick={handleDismiss}
             aria-label="Close"
           >
-            <i className="icon-x"></i>
-          </Link>
+            <i className="icon-x" style={{ fontSize: "16px" }} />
+          </button>
         </div>
       </div>
     </div>

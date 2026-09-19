@@ -219,12 +219,12 @@ ON DUPLICATE KEY UPDATE `event_name`=VALUES(`event_name`);
 
 -- Users
 INSERT INTO `users` (`user_id`, `username`, `password_hash`, `full_name`, `role_code`, `outlet_id`, `is_active`) VALUES
-(1, 'admin', 'admin123', 'Chathura Kumarasighe', 'ADMIN', 1, 1),
-(2, 'cashier1', 'cashier123', 'Nimal Perera', 'CASHIER', 2, 1),
-(3, 'waiter1', 'waiter123', 'Sunil Fernando', 'WAITER', 1, 1),
-(4, 'chef1', 'chef123', 'Executive Chef Bandara', 'CHEF', 1, 1),
-(5, 'expediter1', 'expediter123', 'Kasun Jayawardena', 'EXPEDITER', 2, 1),
-(6, 'manager1', 'manager123', 'F&B Director Senanayake', 'MANAGER', 1, 1)
+(1, 'admin', '$2b$12$cN1qwkr3iTMk8kdx9f2TYexgaTnZ3trzZ3HBCSqUESuPLZydgjFw2', 'Chathura Kumarasighe', 'ADMIN', 1, 1),
+(2, 'cashier1', '$2b$12$AWFlv5kBXWsxX3T1R4/HROQSAU5EEjkldG7CAKGDDiPCEJLS72spu', 'Nimal Perera', 'CASHIER', 2, 1),
+(3, 'waiter1', '$2b$12$TELByTYpSGv/MRscWfFg6ueRbvTWaM7SFWGqNlECgW36tdyam7KlG', 'Sunil Fernando', 'WAITER', 1, 1),
+(4, 'chef1', '$2b$12$SRbAolc2FXhuZRj.uYv1eOJEg.pFuGLcVb.iC6r3Gj6YNNGF4IFV2', 'Executive Chef Bandara', 'CHEF', 1, 1),
+(5, 'expediter1', '$2b$12$BmDEm4OwSFvxo7zzYE6Tm.29mjYWYlRB8AxkXL5pY0m3qBGkXCt3O', 'Kasun Jayawardena', 'EXPEDITER', 2, 1),
+(6, 'manager1', '$2b$12$F6/tl.W86pX6dVp5zogeqOmDgo0L0QFdyDBrgsF/Dhptp2rjQn90m', 'F&B Director Senanayake', 'MANAGER', 1, 1)
 ON DUPLICATE KEY UPDATE `full_name`=VALUES(`full_name`);
 
 -- Restaurant Tables

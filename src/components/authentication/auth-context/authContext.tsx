@@ -7,6 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { getDashboardForRole, isPublicPath } from "@/utils/roleRoutes";
 
 /* =======================
    Types
@@ -42,21 +44,64 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
   /* =======================
      Load user on mount (Client only)
   ======================= */
   useEffect(() => {
+    let loadedUser: User | null = null;
     const storedUser = localStorage.getItem("authUser");
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        loadedUser = JSON.parse(storedUser);
       } catch (e) {
         console.error("Failed to parse stored auth user:", e);
       }
     }
+
+    // Fallback check: read from cookie if localStorage is empty
+    if (!loadedUser && typeof document !== "undefined") {
+      const match = document.cookie.match(new RegExp("(^| )gdh_user=([^;]+)"));
+      if (match && match[2]) {
+        try {
+          loadedUser = JSON.parse(decodeURIComponent(match[2]));
+          if (loadedUser) {
+            localStorage.setItem("authUser", JSON.stringify(loadedUser));
+          }
+        } catch (e) {
+          console.error("Failed to parse user cookie:", e);
+        }
+      }
+    }
+
+    if (loadedUser) {
+      setUser(loadedUser);
+    }
     setIsInitialized(true);
   }, []);
+
+  /* =======================
+     Client-side Route Guard
+  ======================= */
+  useEffect(() => {
+    if (!isInitialized || !pathname) return;
+
+    const isPublic = isPublicPath(pathname);
+
+    // Unauthenticated trying to access protected route
+    if (!user && !isPublic) {
+      const redirectUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
+      router.replace(redirectUrl);
+    }
+
+    // Authenticated trying to access login page
+    if (user && pathname === "/login") {
+      const dest = getDashboardForRole(user.role_code);
+      router.replace(dest);
+    }
+  }, [isInitialized, user, pathname, router]);
 
   /* =======================
      Login via MySQL Database
@@ -85,6 +130,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setUser(loggedUser);
       localStorage.setItem("authUser", JSON.stringify(loggedUser));
+
+      // Client-side cookie sync
+      document.cookie = `gdh_user=${encodeURIComponent(
+        JSON.stringify(loggedUser)
+      )}; path=/; max-age=604800; SameSite=Lax`;
+
       return { ok: true, user: loggedUser, msg: data.message };
     } catch (err: any) {
       console.error("Login request failed:", err);
@@ -110,7 +161,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("authUser");
-    document.cookie = "gdh_user=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    document.cookie = "gdh_user=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
   };
 
   return (

@@ -7,7 +7,7 @@ const RolesPermissionsComponent = dynamic(
   () => import("@/components/pages/administration/permissions/rolePermissions"),
   { 
     ssr: false,
-    loading: () => <p>Loading users...</p>
+    loading: () => <p className="p-4 text-muted">Loading permissions...</p>
   }
 );
 

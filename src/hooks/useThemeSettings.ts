@@ -20,12 +20,14 @@ export function useThemeSettings() {
     const dataLayout = themeSettings["data-layout"];
     
     // Remove all layout-related classes first
-    bodyEl.classList?.remove("hidden-layout", "full-width");
-    htmlElement.classList?.remove("mini-sidebar");
-    
-    // Add appropriate classes based on layout (only for mini layout)
-    if (dataLayout === "mini") {
-      htmlElement.classList?.add("mini-sidebar");
+    if (bodyEl?.classList) {
+      bodyEl.classList.remove("hidden-layout", "full-width");
+    }
+    if (htmlElement?.classList) {
+      htmlElement.classList.remove("mini-sidebar");
+      if (dataLayout === "mini") {
+        htmlElement.classList.add("mini-sidebar");
+      }
     }
     // Note: hidden-layout and full-width classes are only added via toggle button
   }, [themeSettings]);
@@ -46,33 +48,35 @@ export function useThemeSettings() {
     if (!bodyEl || !rootEl) return;
     
     // Handle full-width layout toggle
-    if (currentLayout === "full-width") {
-      if (bodyEl.classList?.contains("full-width")) {
-        bodyEl.classList?.remove("full-width");
+    if (currentLayout === "full-width" && bodyEl?.classList) {
+      if (bodyEl.classList.contains("full-width")) {
+        bodyEl.classList.remove("full-width");
       } else {
-        bodyEl.classList?.add("full-width");
+        bodyEl.classList.add("full-width");
       }
       return;
     }
     
     // Handle hidden layout toggle
-    if (currentLayout === "hidden") {
-      if (bodyEl.classList?.contains("hidden-layout")) {
-        bodyEl.classList?.remove("hidden-layout");
+    if (currentLayout === "hidden" && bodyEl?.classList) {
+      if (bodyEl.classList.contains("hidden-layout")) {
+        bodyEl.classList.remove("hidden-layout");
       } else {
-        bodyEl.classList?.add("hidden-layout");
+        bodyEl.classList.add("hidden-layout");
       }
       return;
     }
     
     // Handle default/mini toggle
-    const isMini = rootEl.getAttribute?.("data-layout") === "mini";
-    if (isMini) {
-      rootEl.classList?.remove("mini-sidebar");
-      handleUpdateTheme("data-layout", "default");
-    } else {
-      rootEl.classList?.add("mini-sidebar");
-      handleUpdateTheme("data-layout", "mini");
+    if (rootEl?.classList) {
+      const isMini = rootEl.getAttribute?.("data-layout") === "mini";
+      if (isMini) {
+        rootEl.classList.remove("mini-sidebar");
+        handleUpdateTheme("data-layout", "default");
+      } else {
+        rootEl.classList.add("mini-sidebar");
+        handleUpdateTheme("data-layout", "mini");
+      }
     }
   }, [handleUpdateTheme, themeSettings]);
 

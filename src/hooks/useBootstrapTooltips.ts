@@ -15,33 +15,50 @@ export function useBootstrapTooltips(deps: any[] = []) {
 
     // Dynamically import Bootstrap Tooltip to avoid SSR issues
     import('bootstrap/js/dist/tooltip').then(({ default: Tooltip }) => {
-      // Clean existing tooltip DOM nodes (in case of improper disposal elsewhere)
-      const oldTooltips = document.querySelectorAll('.tooltip');
-      oldTooltips.forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+      try {
+        // Clean existing tooltip DOM nodes
+        const oldTooltips = document.querySelectorAll('.tooltip');
+        oldTooltips.forEach((el) => el.parentNode && el.parentNode.removeChild(el));
 
-      // Initialize tooltips
-      const tooltipTriggerList = Array.from(
-        document.querySelectorAll('[data-bs-toggle="tooltip"]')
-      ) as HTMLElement[];
-      const tooltipInstances = tooltipTriggerList.map((el) => new Tooltip(el));
+        // Initialize tooltips safely with getOrCreateInstance
+        const tooltipTriggerList = Array.from(
+          document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        ) as HTMLElement[];
+        
+        const tooltipInstances = tooltipTriggerList
+          .map((el) => {
+            try {
+              return Tooltip.getOrCreateInstance ? Tooltip.getOrCreateInstance(el) : new Tooltip(el);
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean);
 
-      // Store instances for cleanup
-      (window as any).__tooltipInstances = tooltipInstances;
+        // Store instances for cleanup
+        (window as any).__tooltipInstances = tooltipInstances;
+      } catch (err) {
+        // Gracefully ignore tooltip init errors in fast refresh
+      }
     });
 
     return () => {
       // Cleanup on unmount
       if (typeof document !== "undefined") {
-        const tooltips = document.querySelectorAll('.tooltip');
-        tooltips.forEach((el) => el.parentNode && el.parentNode.removeChild(el));
-        
-        // Dispose instances if they exist
-        if ((window as any).__tooltipInstances) {
-          (window as any).__tooltipInstances.forEach((instance: any) => 
-            instance?.dispose && instance.dispose()
-          );
-          delete (window as any).__tooltipInstances;
-        }
+        try {
+          const tooltips = document.querySelectorAll('.tooltip');
+          tooltips.forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+          
+          // Dispose instances if they exist
+          if ((window as any).__tooltipInstances) {
+            (window as any).__tooltipInstances.forEach((instance: any) => {
+              try {
+                instance?.dispose?.();
+              } catch {}
+            });
+            delete (window as any).__tooltipInstances;
+          }
+        } catch {}
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
