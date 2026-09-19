@@ -158,17 +158,17 @@ const [active, setActive] = useState<string>('small');
                                             <div className="d-flex align-items-center flex-wrap gap-2 size-group">
                                                 <div className={`size-tab ${active === 'small' ? 'active' : ''}`} onClick={() => setActive('small')}>
                                                     <button className="tag d-flex align-items-center justify-content-between gap-3">
-                                                        Small <span>$28</span>{" "}
+                                                        Small <span>LKR 28</span>{" "}
                                                     </button>
                                                 </div>
                                                 <div className={`size-tab ${active === 'medium' ? 'active' : ''}`} onClick={() => setActive('medium')}>
                                                     <button className="tag d-flex align-items-center justify-content-between gap-3">
-                                                        Medium <span>$28</span>
+                                                        Medium <span>LKR 28</span>
                                                     </button>
                                                 </div>
                                                 <div className={`size-tab ${active === 'large' ? 'active' : ''}`} onClick={() => setActive('large')}>
                                                     <button className="tag d-flex align-items-center justify-content-between gap-3">
-                                                        Regular <span>$28</span>
+                                                        Regular <span>LKR 28</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -179,11 +179,11 @@ const [active, setActive] = useState<string>('small');
                                         </div>
                                         <div>
                                             <h5 className="mb-4 d-flex align-items-center justify-content-between">
-                                                Total <span>$274</span>
+                                                Total <span>LKR 274</span>
                                             </h5>
                                             <div className="d-flex align-items-center gap-3">
                                             <div className="price d-flex align-items-center justify-content-between flex gap-2">
-                                                        <p className="mb-0 text-dark">$45</p>
+                                                        <p className="mb-0 text-dark">LKR 45</p>
                                                         {renderQuantityControl("chicken-noodle-soup2")}
                                                     </div>
                                                 <Link
@@ -303,7 +303,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23588</td>
                                                     <td>Walk-in Customer</td>
-                                                    <td>$34.50</td>
+                                                    <td>LKR 34.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -323,7 +323,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23587</td>
                                                     <td>Sue Allen</td>
-                                                    <td>$78.20</td>
+                                                    <td>LKR 78.20</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -343,7 +343,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23586</td>
                                                     <td>Frank Barrett</td>
-                                                    <td>$45.10</td>
+                                                    <td>LKR 45.10</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -363,7 +363,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23585</td>
                                                     <td>Kelley Davis</td>
-                                                    <td>$92.80</td>
+                                                    <td>LKR 92.80</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -383,7 +383,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23584</td>
                                                     <td>Jim Vickers</td>
-                                                    <td>$61.40</td>
+                                                    <td>LKR 61.40</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -403,7 +403,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23583</td>
                                                     <td>Nancy Chapman</td>
-                                                    <td>$57.20</td>
+                                                    <td>LKR 57.20</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -423,7 +423,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23582</td>
                                                     <td>Ron Jude</td>
-                                                    <td>$45.30</td>
+                                                    <td>LKR 45.30</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -443,7 +443,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>31 Oct 2025</td>
                                                     <td>#23581</td>
                                                     <td>Andrea Aponte</td>
-                                                    <td>$72.60</td>
+                                                    <td>LKR 72.60</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -463,7 +463,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>31 Oct 2025</td>
                                                     <td>#23580</td>
                                                     <td>David Belcher</td>
-                                                    <td>$32.10</td>
+                                                    <td>LKR 32.10</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -483,7 +483,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>31 Oct 2025</td>
                                                     <td>#23579</td>
                                                     <td>Julie Kangas</td>
-                                                    <td>$40.30</td>
+                                                    <td>LKR 40.30</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -522,7 +522,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Dec 2025</td>
                                                     <td>#23588</td>
                                                     <td>Walk-in Customer</td>
-                                                    <td>$34.50</td>
+                                                    <td>LKR 34.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -542,7 +542,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23588</td>
                                                     <td>Walk-in Customer</td>
-                                                    <td>$34.50</td>
+                                                    <td>LKR 34.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -562,7 +562,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23587</td>
                                                     <td>Sue Allen</td>
-                                                    <td>$54.50</td>
+                                                    <td>LKR 54.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -582,7 +582,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23586</td>
                                                     <td>Frank Barrett</td>
-                                                    <td>$94.50</td>
+                                                    <td>LKR 94.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -602,7 +602,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23584</td>
                                                     <td>Kelley Davis</td>
-                                                    <td>$14.50</td>
+                                                    <td>LKR 14.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -622,7 +622,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23588</td>
                                                     <td>Walk-in Customer</td>
-                                                    <td>$34.50</td>
+                                                    <td>LKR 34.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -642,7 +642,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23588</td>
                                                     <td>Jim Vickers</td>
-                                                    <td>$19.50</td>
+                                                    <td>LKR 19.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -662,7 +662,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23582</td>
                                                     <td>Nancy Chapman</td>
-                                                    <td>$34.50</td>
+                                                    <td>LKR 34.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -682,7 +682,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>31 Dec 2025</td>
                                                     <td>#23579</td>
                                                     <td>Ron Jude</td>
-                                                    <td>$34.50</td>
+                                                    <td>LKR 34.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -702,7 +702,7 @@ const [active, setActive] = useState<string>('small');
                                                     <td>01 Nov 2025</td>
                                                     <td>#23588</td>
                                                     <td>Walk-in Customer</td>
-                                                    <td>$34.50</td>
+                                                    <td>LKR 34.50</td>
                                                     <td>
                                                         <Link
                                                             href="#"
@@ -777,7 +777,7 @@ const [active, setActive] = useState<string>('small');
                                 <h5 className="mb-3 fs-16">Ordered Menus</h5>
                                 <h6 className="fs-14 fw-normal d-flex align-items-center justify-content-between mb-3">
                                     Grilled Chicken ×1{" "}
-                                    <span className="fw-medium text-dark">$49</span>{" "}
+                                    <span className="fw-medium text-dark">LKR 49</span>{" "}
                                 </h6>
                                 <h6 className="fs-14 fw-normal d-flex align-items-center justify-content-between mb-3">
                                     {" "}
@@ -789,22 +789,22 @@ const [active, setActive] = useState<string>('small');
                                 <h6 className="fs-14 fw-normal d-flex align-items-center justify-content-between mb-3">
                                     {" "}
                                     Lobster Thermidor ×1{" "}
-                                    <span className="fw-medium text-dark"> $76</span>{" "}
+                                    <span className="fw-medium text-dark">LKR 76</span>{" "}
                                 </h6>
                                 <h6 className="fs-14 fw-normal d-flex align-items-center justify-content-between mb-0">
                                     {" "}
                                     Grilled Chicken ×1{" "}
-                                    <span className="fw-medium text-dark"> $62</span>{" "}
+                                    <span className="fw-medium text-dark">LKR 62</span>{" "}
                                 </h6>
                             </div>
                             {/* Item 3 */}
                             <div className="mb-3 pb-3 border-bottom">
                                 <h6 className="fs-14 fw-normal d-flex align-items-center justify-content-between mb-3">
-                                    Sub Total<span className="fw-medium text-dark">$267</span>{" "}
+                                    Sub Total<span className="fw-medium text-dark">LKR 267</span>{" "}
                                 </h6>
                                 <h6 className="fs-14 fw-normal d-flex align-items-center justify-content-between mb-3">
                                     {" "}
-                                    Tax (10%)<span className="fw-medium text-dark"> $268</span>{" "}
+                                    Tax (10%)<span className="fw-medium text-dark">LKR 268</span>{" "}
                                 </h6>
                                 <h6 className="fs-14 fw-normal d-flex align-items-center justify-content-between mb-0">
                                     {" "}
@@ -815,7 +815,7 @@ const [active, setActive] = useState<string>('small');
                                 </h6>
                             </div>
                             <h5 className="mb-0 d-flex align-items-center justify-content-between">
-                                Total <span>$274</span>
+                                Total <span>LKR 274</span>
                             </h5>
                         </div>
                         <div className="modal-footer d-flex align-items-center justify-content-between flex-nowrap gap-2">
@@ -1117,29 +1117,29 @@ const [active, setActive] = useState<string>('small');
                                                         <td>1</td>
                                                         <td>Grilled Salmon Steak</td>
                                                         <td>2</td>
-                                                        <td>$200.00</td>
-                                                        <td>$396.00</td>
+                                                        <td>LKR 200.00</td>
+                                                        <td>LKR 396.00</td>
                                                     </tr>
                                                     <tr>
                                                         <td>2</td>
                                                         <td>Crispy Bacon Bits</td>
                                                         <td>1</td>
-                                                        <td>$350.00</td>
-                                                        <td>$365.75</td>
+                                                        <td>LKR 350.00</td>
+                                                        <td>LKR 365.75</td>
                                                     </tr>
                                                     <tr>
                                                         <td>3</td>
                                                         <td>Side Fries</td>
                                                         <td>1</td>
-                                                        <td>$399.00</td>
-                                                        <td>$398.90</td>
+                                                        <td>LKR 399.00</td>
+                                                        <td>LKR 398.90</td>
                                                     </tr>
                                                     <tr>
                                                         <td>4</td>
                                                         <td>Lemon Wedge</td>
                                                         <td>4</td>
-                                                        <td>$100.00</td>
-                                                        <td>$396.00</td>
+                                                        <td>LKR 100.00</td>
+                                                        <td>LKR 396.00</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -1181,18 +1181,16 @@ const [active, setActive] = useState<string>('small');
                                                             </p>
                                                         </div>
                                                         <div className="col-6 text-end">
-                                                            <p className="text-dark fw-semibold mb-3">
-                                                                $1,793.12
-                                                            </p>
-                                                            <p className="text-dark fw-semibold mb-3">$18</p>
-                                                            <p className="text-dark fw-semibold mb-3">$18</p>
-                                                            <p className="text-danger fw-semibold">- $18</p>
+                                                            <p className="text-dark fw-semibold mb-3">LKR 1,793.12</p>
+                                                            <p className="text-dark fw-semibold mb-3">LKR 18</p>
+                                                            <p className="text-dark fw-semibold mb-3">LKR 18</p>
+                                                            <p className="text-danger fw-semibold">- LKR 18</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className="d-flex justify-content-between algin-item-center">
                                                     <h6>Total ($)</h6>
-                                                    <h6>$1,972.43</h6>
+                                                    <h6>LKR 1,972.43</h6>
                                                 </div>
                                             </div>
                                         </div>
@@ -1303,7 +1301,7 @@ const [active, setActive] = useState<string>('small');
                   <td>01 Dec 2025</td>
                   <td>#23588</td>
                   <td>Walk-in Customer</td>
-                  <td>$34.50</td>
+                  <td>LKR 34.50</td>
                   <td>
                     <Link
                       href="#"
@@ -1323,7 +1321,7 @@ const [active, setActive] = useState<string>('small');
                   <td>01 Nov 2025</td>
                   <td>#23588</td>
                   <td>Walk-in Customer</td>
-                  <td>$34.50</td>
+                  <td>LKR 34.50</td>
                   <td>
                     <Link
                       href="#"
@@ -1343,7 +1341,7 @@ const [active, setActive] = useState<string>('small');
                   <td>01 Nov 2025</td>
                   <td>#23587</td>
                   <td>Sue Allen</td>
-                  <td>$54.50</td>
+                  <td>LKR 54.50</td>
                   <td>
                     <Link
                       href="#"
@@ -1363,7 +1361,7 @@ const [active, setActive] = useState<string>('small');
                   <td>01 Nov 2025</td>
                   <td>#23586</td>
                   <td>Frank Barrett</td>
-                  <td>$94.50</td>
+                  <td>LKR 94.50</td>
                   <td>
                     <Link
                       href="#"
@@ -1383,7 +1381,7 @@ const [active, setActive] = useState<string>('small');
                   <td>01 Nov 2025</td>
                   <td>#23584</td>
                   <td>Kelley Davis</td>
-                  <td>$14.50</td>
+                  <td>LKR 14.50</td>
                   <td>
                     <Link
                       href="#"
@@ -1403,7 +1401,7 @@ const [active, setActive] = useState<string>('small');
                   <td>01 Nov 2025</td>
                   <td>#23588</td>
                   <td>Walk-in Customer</td>
-                  <td>$34.50</td>
+                  <td>LKR 34.50</td>
                   <td>
                     <Link
                       href="#"
@@ -1423,7 +1421,7 @@ const [active, setActive] = useState<string>('small');
                   <td>01 Nov 2025</td>
                   <td>#23588</td>
                   <td>Jim Vickers</td>
-                  <td>$19.50</td>
+                  <td>LKR 19.50</td>
                   <td>
                     <Link
                       href="#"
@@ -1443,7 +1441,7 @@ const [active, setActive] = useState<string>('small');
                   <td>01 Nov 2025</td>
                   <td>#23582</td>
                   <td>Nancy Chapman</td>
-                  <td>$34.50</td>
+                  <td>LKR 34.50</td>
                   <td>
                     <Link
                       href="#"
@@ -1463,7 +1461,7 @@ const [active, setActive] = useState<string>('small');
                   <td>31 Dec 2025</td>
                   <td>#23579</td>
                   <td>Ron Jude</td>
-                  <td>$34.50</td>
+                  <td>LKR 34.50</td>
                   <td>
                     <Link
                       href="#"
@@ -1483,7 +1481,7 @@ const [active, setActive] = useState<string>('small');
                   <td>01 Nov 2025</td>
                   <td>#23588</td>
                   <td>Walk-in Customer</td>
-                  <td>$34.50</td>
+                  <td>LKR 34.50</td>
                   <td>
                     <Link
                       href="#"

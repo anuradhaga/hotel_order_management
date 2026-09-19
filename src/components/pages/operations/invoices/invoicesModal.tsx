@@ -265,9 +265,9 @@ const InvoicesModal = ({
                               <td>{idx + 1}</td>
                               <td className="fw-medium text-dark">{item.item_name}</td>
                               <td className="text-center">{item.quantity}</td>
-                              <td className="text-end">${Number(item.rate).toFixed(2)}</td>
+                              <td className="text-end">LKR {Number(item.rate).toFixed(2)}</td>
                               <td className="text-end fw-semibold">
-                                ${Number(item.amount).toFixed(2)}
+                                LKR {Number(item.amount).toFixed(2)}
                               </td>
                             </tr>
                           ))}
@@ -305,22 +305,22 @@ const InvoicesModal = ({
                         <div className="bg-light p-3 rounded">
                           <div className="d-flex justify-content-between mb-2 fs-13">
                             <span className="text-muted">Subtotal:</span>
-                            <span className="fw-semibold text-dark">${subtotal.toFixed(2)}</span>
+                            <span className="fw-semibold text-dark">LKR {subtotal.toFixed(2)}</span>
                           </div>
                           {discount > 0 && (
                             <div className="d-flex justify-content-between mb-2 fs-13">
                               <span className="text-success">Discount:</span>
-                              <span className="fw-semibold text-success">-${discount.toFixed(2)}</span>
+                              <span className="fw-semibold text-success">-LKR {discount.toFixed(2)}</span>
                             </div>
                           )}
                           <div className="d-flex justify-content-between mb-2 fs-13">
                             <span className="text-muted">VAT / Tax:</span>
-                            <span className="fw-semibold text-dark">${tax.toFixed(2)}</span>
+                            <span className="fw-semibold text-dark">LKR {tax.toFixed(2)}</span>
                           </div>
                           <hr className="my-2" />
                           <div className="d-flex justify-content-between fs-15">
                             <span className="fw-bold text-dark">Total Amount:</span>
-                            <span className="fw-bold text-primary fs-16">${total.toFixed(2)}</span>
+                            <span className="fw-bold text-primary fs-16">LKR {total.toFixed(2)}</span>
                           </div>
                         </div>
                       </div>

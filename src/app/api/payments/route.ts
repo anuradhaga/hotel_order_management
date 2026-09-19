@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
           ELSE CAST(COALESCE((SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = p.order_id), 3) AS CHAR)
         END AS Menus,
         p.payable_amount AS total_amount,
-        CONCAT('$', FORMAT(p.payable_amount, 2)) AS Amount,
+        CONCAT('LKR ', FORMAT(p.payable_amount, 2)) AS Amount,
         p.payment_method,
         p.payment_status,
         p.payment_status AS Status,

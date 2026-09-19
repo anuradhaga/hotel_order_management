@@ -9,8 +9,7 @@ export interface CommonState {
 export interface RootState {
   headerCollapse: boolean; // Assuming headerCollapse is a boolean value
 }
-// Refactored TableData with specific types and fallback to generic
-export interface TableData extends GenericObject<string | number | boolean | undefined> {
+export interface TableData extends GenericObject<any> {
   by?: string;
   plan_type?: string;
   Apr?: number;
@@ -319,7 +318,12 @@ export interface DatatableProps<T = TableData> {
   dataSource: T[];
   Selection?: boolean;
   searchText: string;
-  isLoading?: boolean; 
+  isLoading?: boolean;
+  defaultPageSize?: number;
+  serverPagination?: boolean;
+  totalCount?: number;
+  currentPage?: number;
+  onPageChange?: (page: number, pageSize: number) => void;
 }
 
 export interface CountriesData {

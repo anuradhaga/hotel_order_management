@@ -49,7 +49,7 @@ const UpgradeSlider = () => {
               </div>
               <div>
                 <p className="fw-medium mb-1 text-dark">Extra Chicken</p>
-                <p className="mb-0 fw-medium">$2</p>
+                <p className="mb-0 fw-medium">LKR 2.00</p>
               </div>
             </div>
           </div>
@@ -70,7 +70,7 @@ const UpgradeSlider = () => {
               </div>
               <div>
                 <p className="fw-medium mb-1 text-dark">Grilled Chicken</p>
-                <p className="mb-0 fw-medium">$8</p>
+                <p className="mb-0 fw-medium">LKR 8.00</p>
               </div>
             </div>
           </div>
@@ -91,7 +91,7 @@ const UpgradeSlider = () => {
               </div>
               <div>
                 <p className="fw-medium mb-1 text-dark">Chicken Soup</p>
-                <p className="mb-0 fw-medium">$2</p>
+                <p className="mb-0 fw-medium">LKR 2.00</p>
               </div>
             </div>
           </div>

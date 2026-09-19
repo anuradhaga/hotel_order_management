@@ -138,7 +138,7 @@ export async function GET(req: NextRequest) {
         i.discount,
         i.tax_amount,
         i.total_amount,
-        CONCAT('$', FORMAT(i.total_amount, 0)) AS Amount,
+        CONCAT('LKR ', FORMAT(i.total_amount, 2)) AS Amount,
         i.status,
         i.status AS Status,
         i.payment_method,

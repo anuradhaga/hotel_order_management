@@ -69,9 +69,17 @@ const AddonsModal = () => {
                                 </div>
                                 <div className="mb-3">
                                     <label className="form-label">
-                                        Price<span className="text-danger"> *</span>
+                                        Price (LKR)<span className="text-danger"> *</span>
                                     </label>
-                                    <input type="text" className="form-control" />
+                                    <div className="input-group">
+                                        <span className="input-group-text">LKR</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="form-control"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
                                 </div>
                                 <div className="mb-3">
                                     <label className="form-label">
@@ -166,9 +174,17 @@ const AddonsModal = () => {
                                 </div>
                                 <div className="mb-3">
                                     <label className="form-label">
-                                        Price<span className="text-danger"> *</span>
+                                        Price (LKR)<span className="text-danger"> *</span>
                                     </label>
-                                    <input type="text" className="form-control" defaultValue="$10" />
+                                    <div className="input-group">
+                                        <span className="input-group-text">LKR</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="form-control"
+                                            defaultValue="10.00"
+                                        />
+                                    </div>
                                 </div>
                                 <div className="mb-3">
                                     <label className="form-label">
