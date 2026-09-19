@@ -61,11 +61,22 @@ const Datatable: React.FC<DatatableProps> = ({
     setPageSize(pageSize);
   }, []);
 
-  const paginatedData = useMemo(
-    () =>
-      filteredDataSource.slice((current - 1) * pageSize, current * pageSize),
-    [filteredDataSource, current, pageSize]
-  );
+  const paginatedData = useMemo(() => {
+    const slice = filteredDataSource.slice(
+      (current - 1) * pageSize,
+      current * pageSize
+    );
+    return slice.map((record, idx) => {
+      if (record && (record.key === undefined || record.key === null)) {
+        const fallback =
+          record.id !== undefined && record.id !== null
+            ? String(record.id)
+            : `dt-row-${(current - 1) * pageSize + idx}`;
+        return { ...record, key: fallback };
+      }
+      return record;
+    });
+  }, [filteredDataSource, current, pageSize]);
 
   // Helper to render a single row for react-window
   const Row = ({
@@ -168,12 +179,14 @@ const Datatable: React.FC<DatatableProps> = ({
                 rowHoverable={false}
                 dataSource={paginatedData}
                 pagination={false}
-                rowKey={(record: any, index?: number) =>
-                  record?.key !== undefined
+                rowKey={(record: any) =>
+                  record?.key !== undefined && record?.key !== null
                     ? String(record.key)
-                    : record?.id !== undefined
-                    ? `row-${record.id}-${index}`
-                    : `table-row-${index}`
+                    : record?.id !== undefined && record?.id !== null
+                    ? String(record.id)
+                    : record?.Number !== undefined && record?.Tax_Name !== undefined
+                    ? `tax-${record.Number}-${record.Tax_Name}`
+                    : String(record?.Customer_ID || record?.salesId || record?.orderId || "row")
                 }
               />
             );
