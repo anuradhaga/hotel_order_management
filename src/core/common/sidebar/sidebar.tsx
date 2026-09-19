@@ -80,7 +80,6 @@ const Sidebar = () => {
   useEffect(() => {
     const matchingTab = getTabIdByRoute(location);
     if (matchingTab) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(matchingTab);
     }
   }, [location]);

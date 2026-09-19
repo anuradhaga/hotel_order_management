@@ -4,10 +4,10 @@ import pool from "@/lib/db";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const dept = searchParams.get("dept"); // e.g., 'GRILL', 'MAIN_KITCHEN', 'PASTRY', 'BAR'
+    const dept = searchParams.get("dept"); // e.g., 'BANQUET_KITCHEN', 'GRILL', 'MAIN_KITCHEN', 'PASTRY', 'BAR'
+    const event_id = searchParams.get("event_id"); // filter by specific special event
 
-    // Fetch active kitchen orders
-    const [orders]: any[] = await pool.query(`
+    let orderSql = `
       SELECT 
         o.order_id,
         o.order_number,
@@ -15,20 +15,35 @@ export async function GET(req: NextRequest) {
         o.order_status,
         o.pickup_token,
         o.guest_count,
+        o.event_id,
         o.created_at,
         o.updated_at,
         outl.outlet_name,
         outl.outlet_code,
         rt.table_number,
         rt.dining_zone,
+        ev.event_name,
+        ev.event_code,
+        ev.dedicated_kitchen_dept,
         TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) as elapsed_minutes,
         TIMESTAMPDIFF(SECOND, o.created_at, NOW()) as elapsed_seconds
       FROM orders o
       LEFT JOIN outlets outl ON o.outlet_id = outl.outlet_id
       LEFT JOIN restaurant_tables rt ON o.table_id = rt.table_id
+      LEFT JOIN events ev ON o.event_id = ev.event_id
       WHERE o.order_status IN ('QUEUED', 'PREPARING', 'PREPARED', 'READY')
-      ORDER BY o.created_at ASC
-    `);
+    `;
+    const orderParams: any[] = [];
+
+    if (event_id) {
+      orderSql += " AND o.event_id = ?";
+      orderParams.push(event_id);
+    }
+
+    orderSql += " ORDER BY o.created_at ASC";
+
+    // Fetch active kitchen orders
+    const [orders]: any[] = await pool.query(orderSql, orderParams);
 
     // Fetch items for each active order
     const enrichedTickets = await Promise.all(
@@ -40,9 +55,10 @@ export async function GET(req: NextRequest) {
             oi.quantity,
             oi.cooking_notes,
             oi.item_status,
+            oi.routed_kitchen_dept,
             i.item_name,
             i.item_code,
-            i.kitchen_dept,
+            COALESCE(oi.routed_kitchen_dept, i.kitchen_dept) AS kitchen_dept,
             i.is_spicy,
             i.is_vegetarian
           FROM order_items oi
@@ -51,7 +67,7 @@ export async function GET(req: NextRequest) {
         `;
         const params: any[] = [ord.order_id];
         if (dept) {
-          itemQuery += " AND i.kitchen_dept = ?";
+          itemQuery += " AND COALESCE(oi.routed_kitchen_dept, i.kitchen_dept) = ?";
           params.push(dept);
         }
         itemQuery += " ORDER BY oi.round_number ASC, oi.order_item_id ASC";

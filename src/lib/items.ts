@@ -146,7 +146,46 @@ export async function getItemsServerData(options: GetItemsOptions = {}) {
       });
     }
 
+    // 4b. Fetch all addons for the retrieved items
+    let addonRows: any[] = [];
+    try {
+      const [addonsResult]: any[] = await pool.query(
+        `SELECT addon_id, item_id, addon_name, price, description, is_active
+         FROM item_addons
+         WHERE item_id IN (?)
+         ORDER BY addon_id ASC`,
+        [itemIds]
+      );
+      addonRows = addonsResult;
+    } catch (e) {
+      console.warn("Could not query item_addons:", e);
+    }
+
+    const addonsByItemId = new Map<
+      number,
+      Array<{
+        addon_id: number;
+        addon_name: string;
+        price: number;
+        description?: string;
+        is_active: number;
+      }>
+    >();
+    for (const ad of addonRows) {
+      if (!addonsByItemId.has(ad.item_id)) {
+        addonsByItemId.set(ad.item_id, []);
+      }
+      addonsByItemId.get(ad.item_id)!.push({
+        addon_id: ad.addon_id,
+        addon_name: ad.addon_name,
+        price: Number(ad.price || 0),
+        description: ad.description || "",
+        is_active: ad.is_active,
+      });
+    }
+
     for (const r of rows) {
+      r.addons = addonsByItemId.get(r.item_id) || [];
       const itemPrices = pricesByItemId.get(r.item_id);
       if (itemPrices && itemPrices.length > 0) {
         r.sizes = itemPrices;

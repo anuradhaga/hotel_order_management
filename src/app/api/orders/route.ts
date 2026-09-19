@@ -116,12 +116,24 @@ export async function POST(req: NextRequest) {
       );
       const nextRound = roundRows[0]?.next_round || 2;
 
+      let eventDedicatedKitchen: string | null = null;
+      if (existingOrderRows[0]?.event_id) {
+        const [evRows]: any = await connection.execute(
+          "SELECT dedicated_kitchen_dept FROM events WHERE event_id = ?",
+          [existingOrderRows[0].event_id]
+        );
+        if (evRows.length > 0 && evRows[0].dedicated_kitchen_dept) {
+          eventDedicatedKitchen = evRows[0].dedicated_kitchen_dept;
+        }
+      }
+
       // Insert new round items
       for (const itm of items) {
         const lineTotal = Number(itm.quantity) * Number(itm.unit_price);
+        const routedDept = itm.routed_kitchen_dept || eventDedicatedKitchen || null;
         await connection.execute(
-          `INSERT INTO order_items (order_id, item_id, round_number, quantity, unit_price, line_total, cooking_notes, item_status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'QUEUED')`,
+          `INSERT INTO order_items (order_id, item_id, round_number, quantity, unit_price, line_total, cooking_notes, routed_kitchen_dept, item_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'QUEUED')`,
           [
             targetOrderId,
             itm.item_id,
@@ -130,6 +142,7 @@ export async function POST(req: NextRequest) {
             itm.unit_price,
             lineTotal,
             itm.cooking_notes || null,
+            routedDept,
           ]
         );
       }
@@ -177,14 +190,15 @@ export async function POST(req: NextRequest) {
 
       let initialStatus: string;
       if (operating_mode === "OUTLET_COUNTER") {
-        if (!customer_mobile) {
+        if (!event_id && !customer_mobile) {
           await connection.rollback();
           return NextResponse.json(
             { success: false, error: "Customer mobile number is mandatory for counter orders (FR-OUT-002)" },
             { status: 400 }
           );
         }
-        initialStatus = "OTP_PENDING";
+        // If it's a Special Event order, release straight to kitchen queue without OTP block
+        initialStatus = event_id ? "QUEUED" : "OTP_PENDING";
         pickupToken = generatePickupToken();
       } else {
         // Mode B Restaurant Dine-In
@@ -218,12 +232,24 @@ export async function POST(req: NextRequest) {
 
       targetOrderId = orderResult.insertId;
 
+      let eventDedicatedKitchen: string | null = null;
+      if (event_id) {
+        const [evRows]: any = await connection.execute(
+          "SELECT dedicated_kitchen_dept FROM events WHERE event_id = ?",
+          [event_id]
+        );
+        if (evRows.length > 0 && evRows[0].dedicated_kitchen_dept) {
+          eventDedicatedKitchen = evRows[0].dedicated_kitchen_dept;
+        }
+      }
+
       // Insert order items
       for (const itm of items) {
         const lineTotal = Number(itm.quantity) * Number(itm.unit_price);
+        const routedDept = itm.routed_kitchen_dept || eventDedicatedKitchen || null;
         await connection.execute(
-          `INSERT INTO order_items (order_id, item_id, round_number, quantity, unit_price, line_total, cooking_notes, item_status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'QUEUED')`,
+          `INSERT INTO order_items (order_id, item_id, round_number, quantity, unit_price, line_total, cooking_notes, routed_kitchen_dept, item_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'QUEUED')`,
           [
             targetOrderId,
             itm.item_id,
@@ -232,12 +258,13 @@ export async function POST(req: NextRequest) {
             itm.unit_price,
             lineTotal,
             itm.cooking_notes || null,
+            routedDept,
           ]
         );
       }
 
-      // If Mode A Counter: Generate 6-digit cryptographic OTP (FR-OUT-003)
-      if (operating_mode === "OUTLET_COUNTER") {
+      // If Mode A Counter (non-event): Generate 6-digit cryptographic OTP (FR-OUT-003)
+      if (operating_mode === "OUTLET_COUNTER" && !event_id) {
         simulatedOtp = generateOtpCode();
         const otpHash = hashOtpCode(simulatedOtp);
         const expiryDate = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
