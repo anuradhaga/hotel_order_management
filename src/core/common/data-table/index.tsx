@@ -168,6 +168,13 @@ const Datatable: React.FC<DatatableProps> = ({
                 rowHoverable={false}
                 dataSource={paginatedData}
                 pagination={false}
+                rowKey={(record: any, index?: number) =>
+                  record?.key !== undefined
+                    ? String(record.key)
+                    : record?.id !== undefined
+                    ? `row-${record.id}-${index}`
+                    : `table-row-${index}`
+                }
               />
             );
           })()
@@ -202,6 +209,7 @@ const Datatable: React.FC<DatatableProps> = ({
           <ul className="pagination mb-0" role="list">
             {/* Prev button */}
             <li
+              key="paginate-btn-prev"
               className={`paginate_button page-item previous${
                 current === 1 ? " disabled" : ""
               }`}
@@ -230,7 +238,7 @@ const Datatable: React.FC<DatatableProps> = ({
                 const pageNum = idx + 1;
                 return (
                   <li
-                    key={pageNum}
+                    key={`paginate-page-num-${pageNum}`}
                     className={`paginate_button ms-2 page-item${
                       current === pageNum ? " active" : ""
                     }`}
@@ -258,6 +266,7 @@ const Datatable: React.FC<DatatableProps> = ({
             )}
             {/* Next button */}
             <li
+              key="paginate-btn-next"
               className={`paginate_button page-item ms-2 next${
                 current === Math.ceil(filteredDataSource.length / pageSize) ||
                 filteredDataSource.length === 0
