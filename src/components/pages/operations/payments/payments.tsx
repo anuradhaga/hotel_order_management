@@ -1,263 +1,508 @@
 "use client";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DragDropContext,
   Droppable,
   Draggable,
 } from "@hello-pangea/dnd";
 import type { DropResult } from "@hello-pangea/dnd";
-import InvoicesModal from "./paymentsModal";
+import PaymentsModal, { PaymentRecord } from "./paymentsModal";
 import { TableData } from "@/core/data/interface";
-import { PaymentsData } from "@/core/data/json/paymentsData";
 import Link from "next/link";
 import ImageWithBasePath from "@/core/common/image-with-base-path";
 import SearchInput from "@/core/common/data-table/dataTableSearch";
 import DataTable from "@/core/common/data-table";
+import Toast from "@/core/common/toast/toast";
 
 type DataRow = TableData & {
   key: string;
-  id?: string;
+  id?: string | number;
+  payment_id?: number;
+  order_id?: number;
   Transaction_ID: string;
   Customer: string;
   Order_ID: string;
   Token_No: string;
   Amount: string;
+  total_amount?: number;
   Order_Type: string;
   image?: string;
-  Menus: string;
+  Menus: string | number;
+  payment_method?: string;
+  payment_status?: string;
+  Status?: string;
+  Date?: string;
+  created_at_formatted?: string;
 };
+
 const PaymentsComponent = () => {
-  const [rows, setRows] = useState<DataRow[]>(
-    () =>
-      (PaymentsData as TableData[]).map((row, idx) => ({
-        ...row,
-        key: `${(row as { key?: string }).key ||
-          (row as { id?: string }).id ||
-          row.Invoice_ID ||
-          idx
-          }`,
-      })) as DataRow[]
-  );
-  const [pendingDelete, setPendingDelete] = useState<DataRow | null>(null);
+  const [rows, setRows] = useState<DataRow[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
+  const [sortBy, setSortBy] = useState<string>("Newest");
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "danger" | "warning" | "info" } | null>(null);
+
+  // Filter state
+  const [appliedFilters, setAppliedFilters] = useState<{
+    customers: string[];
+    orderTypes: string[];
+    status: string;
+  }>({
+    customers: [],
+    orderTypes: [],
+    status: "all",
+  });
+
+  const [searchText, setSearchText] = useState<string>("");
+
+  // Load payments from API
+  const loadPayments = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      const res = await fetch("/api/payments");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        const mapped: DataRow[] = json.data.map((p: any, idx: number) => ({
+          ...p,
+          key: `pmt-${p.payment_id || p.Transaction_ID || idx}`,
+          id: p.payment_id || idx,
+          Transaction_ID: p.Transaction_ID,
+          Order_ID: p.Order_ID,
+          Token_No: p.Token_No,
+          Customer: p.Customer,
+          image: p.image || "avatar-32.jpg",
+          Order_Type: p.Order_Type,
+          Menus: p.Menus,
+          Amount: p.Amount,
+        }));
+        setRows(mapped);
+      } else {
+        setToast({ msg: json.error || "Failed to load payments", type: "danger" });
+      }
+    } catch (err: any) {
+      console.error("Error loading payments:", err);
+      setToast({ msg: err.message || "Failed to connect to payments API", type: "danger" });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPayments();
+  }, [loadPayments]);
+
+  // Extract unique customer names for filter drawer
+  const customersList = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => {
+      if (r.Customer) set.add(r.Customer);
+    });
+    return Array.from(set);
+  }, [rows]);
+
+  // Filter and sort rows
+  const filteredAndSortedRows = useMemo(() => {
+    let result = [...rows];
+
+    // Status filter
+    if (appliedFilters.status && appliedFilters.status !== "all") {
+      result = result.filter(
+        (r) => (r.Status || r.payment_status || "").toLowerCase() === appliedFilters.status.toLowerCase()
+      );
+    }
+
+    // Customer filter
+    if (appliedFilters.customers.length > 0) {
+      result = result.filter((r) => appliedFilters.customers.includes(r.Customer));
+    }
+
+    // Order Type filter
+    if (appliedFilters.orderTypes.length > 0) {
+      result = result.filter((r) => appliedFilters.orderTypes.includes(r.Order_Type));
+    }
+
+    // Search text filter
+    if (searchText && searchText.trim()) {
+      const q = searchText.trim().toLowerCase();
+      result = result.filter(
+        (r) =>
+          (r.Transaction_ID && r.Transaction_ID.toLowerCase().includes(q)) ||
+          (r.Order_ID && r.Order_ID.toLowerCase().includes(q)) ||
+          (r.Token_No && String(r.Token_No).toLowerCase().includes(q)) ||
+          (r.Customer && r.Customer.toLowerCase().includes(q)) ||
+          (r.Order_Type && r.Order_Type.toLowerCase().includes(q)) ||
+          (r.Menus && String(r.Menus).toLowerCase().includes(q)) ||
+          (r.Amount && r.Amount.toLowerCase().includes(q))
+      );
+    }
+
+    // Sorting
+    if (sortBy === "Newest") {
+      result.sort((a, b) => b.Transaction_ID.localeCompare(a.Transaction_ID));
+    } else if (sortBy === "Oldest") {
+      result.sort((a, b) => a.Transaction_ID.localeCompare(b.Transaction_ID));
+    } else if (sortBy === "Ascending") {
+      result.sort((a, b) => {
+        const amtA = Number(a.total_amount || a.Amount.replace(/[^0-9.]/g, "") || 0);
+        const amtB = Number(b.total_amount || b.Amount.replace(/[^0-9.]/g, "") || 0);
+        return amtA - amtB;
+      });
+    } else if (sortBy === "Descending") {
+      result.sort((a, b) => {
+        const amtA = Number(a.total_amount || a.Amount.replace(/[^0-9.]/g, "") || 0);
+        const amtB = Number(b.total_amount || b.Amount.replace(/[^0-9.]/g, "") || 0);
+        return amtB - amtA;
+      });
+    }
+
+    return result;
+  }, [rows, appliedFilters, searchText, sortBy]);
+
+  // Export as CSV
+  const handleExportExcel = () => {
+    if (filteredAndSortedRows.length === 0) {
+      setToast({ msg: "No payment records to export", type: "warning" });
+      return;
+    }
+
+    const headers = ["Transaction ID", "Order ID", "Token No", "Customer", "Type", "Menus", "Grand Total"];
+    const csvContent = [
+      headers.join(","),
+      ...filteredAndSortedRows.map((r) =>
+        [
+          `"${r.Transaction_ID}"`,
+          `"${r.Order_ID}"`,
+          `"${r.Token_No}"`,
+          `"${r.Customer}"`,
+          `"${r.Order_Type}"`,
+          `"${r.Menus}"`,
+          `"${r.Amount}"`,
+        ].join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `payments_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setToast({ msg: "Payments exported to CSV successfully!", type: "success" });
+  };
+
+  // Export as PDF / Print
+  const handleExportPDF = () => {
+    window.print();
+  };
+
   const baseColumns = useMemo(
     () => [
       {
         title: "Transaction ID",
         dataIndex: "Transaction_ID",
-        render: (text: string) => <Link href="#">{text}</Link>,
-        sorter: (a: DataRow, b: DataRow) => a.Transaction_ID.length - b.Transaction_ID.length,
+        render: (text: string, record: DataRow) => (
+          <button
+            type="button"
+            className="btn btn-link p-0 fw-semibold text-primary text-decoration-none"
+            data-bs-toggle="modal"
+            data-bs-target="#view_transaction_modal"
+            onClick={() => setSelectedPayment(record)}
+            title="View Transaction Details"
+          >
+            {text}
+          </button>
+        ),
+        sorter: (a: DataRow, b: DataRow) => a.Transaction_ID.localeCompare(b.Transaction_ID),
       },
       {
         title: "Order ID",
         dataIndex: "Order_ID",
-        render: (text: string) => <Link href="#">{text}</Link>,
-        sorter: (a: DataRow, b: DataRow) => a.Order_ID.length - b.Order_ID.length,
+        render: (text: string, record: DataRow) => (
+          <button
+            type="button"
+            className="btn btn-link p-0 text-dark text-decoration-none fw-medium"
+            data-bs-toggle="modal"
+            data-bs-target="#view_transaction_modal"
+            onClick={() => setSelectedPayment(record)}
+            title="View Order Details"
+          >
+            {text}
+          </button>
+        ),
+        sorter: (a: DataRow, b: DataRow) => a.Order_ID.localeCompare(b.Order_ID),
       },
       {
         title: "Token No",
         dataIndex: "Token_No",
-        sorter: (a: DataRow, b: DataRow) => a.Token_No.length - b.Token_No.length,
+        render: (text: string) => <span className="fw-medium text-dark">{text}</span>,
+        sorter: (a: DataRow, b: DataRow) => Number(a.Token_No) - Number(b.Token_No),
       },
       {
         title: "Customer",
         dataIndex: "Customer",
         render: (text: string, record: any) => (
           <div className="d-flex align-items-center">
-            <Link href="#" className="avatar avatar-sm avatar-rounded flex-shrink-0 me-2">
-              <ImageWithBasePath src={`assets/img/profiles/${record.image}`} alt="category" className="img-fluid" />
-            </Link>
+            <span className="avatar avatar-sm avatar-rounded flex-shrink-0 me-2 bg-light-primary text-primary fw-bold fs-13 d-flex align-items-center justify-content-center">
+              {record.image && record.image.startsWith("avatar-") ? (
+                <ImageWithBasePath
+                  src={`assets/img/profiles/${record.image}`}
+                  alt={text}
+                  className="img-fluid rounded-circle"
+                />
+              ) : (
+                text?.charAt(0) || "C"
+              )}
+            </span>
             <h6 className="fs-14 fw-normal mb-0">
-              <Link href="#">{text}</Link>
+              <span className="text-dark fw-medium">{text}</span>
             </h6>
           </div>
         ),
-        sorter: (a: DataRow, b: DataRow) => a.Customer.length - b.Customer.length,
+        sorter: (a: DataRow, b: DataRow) => a.Customer.localeCompare(b.Customer),
       },
       {
         title: "Type",
         dataIndex: "Order_Type",
-        sorter: (a: DataRow, b: DataRow) => a.Order_Type.length - b.Order_Type.length,
+        render: (text: string) => (
+          <span className="badge bg-light text-dark border px-2 py-1 fs-12">
+            {text}
+          </span>
+        ),
+        sorter: (a: DataRow, b: DataRow) => a.Order_Type.localeCompare(b.Order_Type),
       },
       {
         title: "Menus",
         dataIndex: "Menus",
-        sorter: (a: DataRow, b: DataRow) => a.Menus.length - b.Menus.length,
+        render: (text: string | number) => <span className="text-dark fw-medium">{text}</span>,
+        sorter: (a: DataRow, b: DataRow) => Number(a.Menus) - Number(b.Menus),
       },
       {
         title: "Grand Total",
         dataIndex: "Amount",
-        render: (text: string) => <p className="fw-medium text-dark">{text}</p>,
-        sorter: (a: DataRow, b: DataRow) => a.Amount.length - b.Amount.length,
+        render: (text: string) => <p className="fw-semibold text-dark mb-0">{text}</p>,
+        sorter: (a: DataRow, b: DataRow) => {
+          const amtA = Number(a.total_amount || a.Amount.replace(/[^0-9.]/g, "") || 0);
+          const amtB = Number(b.total_amount || b.Amount.replace(/[^0-9.]/g, "") || 0);
+          return amtA - amtB;
+        },
       },
     ],
     []
   );
+
   const [columnOrder, setColumnOrder] = useState<string[]>(() =>
     baseColumns.map((c) => String(c.dataIndex || c.title))
   );
-  const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>(
-    columnOrder
-  );
+  const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>(columnOrder);
 
-  const handleConfirmDelete = useCallback(() => {
-    if (!pendingDelete?.key) return;
-    setRows((prev) => prev.filter((row) => row.key !== pendingDelete.key));
-    setPendingDelete(null);
-  }, [pendingDelete]);
   const handleToggleColumn = useCallback((key: string) => {
     setVisibleColumnKeys((prev) =>
       prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key]
     );
   }, []);
 
-  const handleColumnDragEnd = useCallback(
-    (result: DropResult) => {
-      if (!result.destination) return;
-
-      setColumnOrder((prev) => {
-        const next = [...prev];
-        const [moved] = next.splice(result.source.index, 1);
-        next.splice(result.destination!.index, 0, moved);
-        return next;
-      });
-    },
-    []
-  );
+  const handleColumnDragEnd = useCallback((result: DropResult) => {
+    if (!result.destination) return;
+    setColumnOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(result.source.index, 1);
+      next.splice(result.destination!.index, 0, moved);
+      return next;
+    });
+  }, []);
 
   const orderedColumns = useMemo(() => {
-    const columnMap = new Map(
-      baseColumns.map((col) => [String(col.dataIndex || col.title), col])
-    );
-    return columnOrder
-      .map((key) => columnMap.get(key))
-      .filter(Boolean) as typeof baseColumns;
+    const columnMap = new Map(baseColumns.map((col) => [String(col.dataIndex || col.title), col]));
+    return columnOrder.map((key) => columnMap.get(key)).filter(Boolean) as typeof baseColumns;
   }, [baseColumns, columnOrder]);
 
-  const columns = orderedColumns;
-
-  const [searchText, setSearchText] = useState<string>("");
-
-  const handleSearch = useCallback((value: string) => {
-    setSearchText(value);
-  }, []);
   const mappedColumns = useMemo(
     () =>
-      columns.map((col: any, idx: number) => ({
+      orderedColumns.map((col: any, idx: number) => ({
         ...col,
         ID: idx.toString(),
         key: (col as any).dataIndex || idx.toString(),
       })),
-    [columns]
+    [orderedColumns]
   );
+
   const visibleColumns = useMemo(
-    () =>
-      mappedColumns.filter((col) =>
-        visibleColumnKeys.includes(String(col.dataIndex || col.key))
-      ),
+    () => mappedColumns.filter((col) => visibleColumnKeys.includes(String(col.dataIndex || col.key))),
     [mappedColumns, visibleColumnKeys]
   );
+
   return (
     <>
+      {toast && (
+        <Toast
+          msg={toast.msg}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       <div className="page-wrapper">
-        {/* Start Content */}
         <div className="content">
-          {/* Page Header */}
+          {/* Page Header matching user screenshot */}
           <div className="d-flex align-items-sm-center flex-sm-row flex-column gap-3 mb-4">
             <div className="flex-grow-1">
-              <h3 className="mb-0">
-                Invoices{" "}
-                <Link
-                  href="#"
+              <h3 className="mb-0 d-flex align-items-center">
+                Invoices
+                <button
+                  type="button"
                   className="btn btn-icon btn-sm btn-white rounded-circle ms-2"
+                  title="Reload Payments"
+                  onClick={loadPayments}
+                  disabled={refreshing}
                 >
-                  <i className="icon-refresh-ccw" />
-                </Link>
+                  <i className={`icon-refresh-ccw ${refreshing ? "fa-spin" : ""}`} />
+                </button>
               </h3>
             </div>
             <div className="gap-2 d-flex align-items-center flex-wrap">
               <div className="dropdown">
-                <Link
-                  href="#"
+                <button
+                  type="button"
                   className="dropdown-toggle btn btn-white d-inline-flex align-items-center"
                   data-bs-toggle="dropdown"
                 >
                   <i className="icon-upload me-2" />
                   Export
-                </Link>
-                <ul className="dropdown-menu dropdown-menu-end p-3">
+                </button>
+                <ul className="dropdown-menu dropdown-menu-end p-2 shadow-sm border">
                   <li>
-                    <Link href="#" className="dropdown-item rounded">
-                      Export as PDF
-                    </Link>
+                    <button
+                      type="button"
+                      className="dropdown-item rounded d-flex align-items-center py-2"
+                      onClick={handleExportPDF}
+                    >
+                      <i className="icon-file-text me-2 text-danger" />
+                      Export as PDF / Print
+                    </button>
                   </li>
                   <li>
-                    <Link href="#" className="dropdown-item rounded">
-                      Export as Excel
-                    </Link>
+                    <button
+                      type="button"
+                      className="dropdown-item rounded d-flex align-items-center py-2"
+                      onClick={handleExportExcel}
+                    >
+                      <i className="icon-file-spreadsheet me-2 text-success" />
+                      Export as Excel (CSV)
+                    </button>
                   </li>
                 </ul>
               </div>
             </div>
           </div>
           {/* End Page Header */}
-          {/* card start */}
+
+          {/* Active Filter Indicators */}
+          {(appliedFilters.status !== "all" ||
+            appliedFilters.customers.length > 0 ||
+            appliedFilters.orderTypes.length > 0 ||
+            searchText) && (
+            <div className="alert bg-light border p-2 mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div className="d-flex align-items-center flex-wrap gap-2 fs-13">
+                <span className="fw-semibold text-dark">Active Filters:</span>
+                {appliedFilters.status !== "all" && (
+                  <span className="badge bg-primary">Status: {appliedFilters.status}</span>
+                )}
+                {appliedFilters.orderTypes.length > 0 && (
+                  <span className="badge bg-info">Types: {appliedFilters.orderTypes.join(", ")}</span>
+                )}
+                {appliedFilters.customers.length > 0 && (
+                  <span className="badge bg-secondary">
+                    Customers: {appliedFilters.customers.join(", ")}
+                  </span>
+                )}
+                {searchText && (
+                  <span className="badge bg-warning text-dark">Search: &quot;{searchText}&quot;</span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn btn-sm btn-link text-danger p-0 fs-13 text-decoration-none fw-semibold"
+                onClick={() => {
+                  setAppliedFilters({ customers: [], orderTypes: [], status: "all" });
+                  setSearchText("");
+                }}
+              >
+                Clear All Filters
+              </button>
+            </div>
+          )}
+
+          {/* Table Card */}
           <div className="card mb-0">
             <div className="card-body">
               <div className="d-flex align-items-center flex-wrap gap-3 justify-content-between mb-4">
                 <div className="search-input">
-                  <SearchInput value={searchText} onChange={handleSearch} />
+                  <SearchInput value={searchText} onChange={(val) => setSearchText(val)} />
                 </div>
                 <div className="d-flex align-items-center gap-2 flex-wrap">
-                  {/* filter */}
-                  <Link
-                    href="#"
-                    className="btn btn-white d-inline-flex align-items-center"
+                  {/* Filter Button */}
+                  <button
+                    type="button"
+                    className={`btn btn-white d-inline-flex align-items-center ${
+                      appliedFilters.status !== "all" ||
+                      appliedFilters.customers.length > 0 ||
+                      appliedFilters.orderTypes.length > 0
+                        ? "border-primary text-primary fw-bold"
+                        : ""
+                    }`}
                     data-bs-toggle="offcanvas"
                     data-bs-target="#filter-offcanvas"
                     aria-controls="filter-offcanvas"
                   >
                     <i className="icon-funnel me-2" />
                     Filter
-                  </Link>
-                  {/* column */}
+                    {(appliedFilters.customers.length > 0 ||
+                      appliedFilters.orderTypes.length > 0 ||
+                      appliedFilters.status !== "all") && (
+                      <span className="badge bg-primary ms-2 rounded-pill">
+                        {appliedFilters.customers.length +
+                          appliedFilters.orderTypes.length +
+                          (appliedFilters.status !== "all" ? 1 : 0)}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Column Visibility Toggle */}
                   <div className="dropdown">
-                    <Link
-                      href="#"
+                    <button
+                      type="button"
                       className="btn btn-icon btn-white"
                       data-bs-toggle="dropdown"
                       data-bs-auto-close="outside"
+                      title="Manage Columns"
                     >
                       <i className="icon-columns-3" />
-                    </Link>
-                    <div className="dropdown-menu dropdown-menu-md dropdown-menu-end p-3">
-                      <h5 className="mb-3">Column</h5>
+                    </button>
+                    <div className="dropdown-menu dropdown-menu-md dropdown-menu-end p-3 shadow border">
+                      <h6 className="fw-bold mb-3">Visible Columns</h6>
                       <DragDropContext onDragEnd={handleColumnDragEnd}>
-                        <Droppable droppableId="column-list">
+                        <Droppable droppableId="payments-column-list">
                           {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                            >
+                            <div ref={provided.innerRef} {...provided.droppableProps}>
                               {mappedColumns.map((col, index) => {
                                 const key = String(col.dataIndex || col.key);
                                 const checked = visibleColumnKeys.includes(key);
                                 return (
-                                  <Draggable
-                                    key={key}
-                                    draggableId={key}
-                                    index={index}
-                                  >
+                                  <Draggable key={key} draggableId={key} index={index}>
                                     {(dragProvided) => (
                                       <div
-                                        className="mb-3"
+                                        className="mb-2"
                                         ref={dragProvided.innerRef}
                                         {...dragProvided.draggableProps}
                                       >
-                                        <label className="d-flex align-items-center">
+                                        <label className="d-flex align-items-center cursor-pointer fs-13">
                                           <span
                                             className="me-2 d-flex align-items-center text-muted"
                                             {...dragProvided.dragHandleProps}
-                                            aria-label={`Drag to reorder ${col.title}`}
                                           >
                                             <i className="icon-grip-vertical" />
                                           </span>
@@ -281,101 +526,70 @@ const PaymentsComponent = () => {
                       </DragDropContext>
                     </div>
                   </div>
-                  {/* sort by */}
+
+                  {/* Sort by Dropdown */}
                   <div className="dropdown">
-                    <Link
-                      href="#"
+                    <button
+                      type="button"
                       className="dropdown-toggle btn btn-white d-inline-flex align-items-center"
                       data-bs-toggle="dropdown"
                     >
-                      Sort by : Newest
-                    </Link>
-                    <ul className="dropdown-menu dropdown-menu-end p-3">
-                      <li>
-                        <Link href="#" className="dropdown-item rounded-1">
-                          Newest
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="#" className="dropdown-item rounded-1">
-                          Oldest
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="#" className="dropdown-item rounded-1">
-                          Ascending
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="#" className="dropdown-item rounded-1">
-                          Descending
-                        </Link>
-                      </li>
+                      Sort by : {sortBy}
+                    </button>
+                    <ul className="dropdown-menu dropdown-menu-end p-2 shadow-sm border">
+                      {["Newest", "Oldest", "Ascending", "Descending"].map((opt) => (
+                        <li key={opt}>
+                          <button
+                            type="button"
+                            className={`dropdown-item rounded-1 ${sortBy === opt ? "active" : ""}`}
+                            onClick={() => setSortBy(opt)}
+                          >
+                            {opt === "Ascending"
+                              ? "Grand Total: Low to High"
+                              : opt === "Descending"
+                              ? "Grand Total: High to Low"
+                              : opt}
+                          </button>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </div>
               </div>
-              {/* table start */}
+
+              {/* Table */}
               <div className="table-responsive table-nowrap">
-                <DataTable
-                  columns={visibleColumns}
-                  dataSource={rows}
-                  Selection={false}
-                  searchText={searchText}
-                />
+                {loading ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <p className="text-muted mt-2">Loading payments from database...</p>
+                  </div>
+                ) : (
+                  <DataTable
+                    columns={visibleColumns}
+                    dataSource={filteredAndSortedRows}
+                    Selection={false}
+                    searchText={searchText}
+                  />
+                )}
               </div>
-              {/* table end */}
             </div>
           </div>
-          {/* card start */}
         </div>
-        {/* End Content */}
       </div>
 
-      {/* Start Modal  */}
-      <div className="modal fade" id="delete_modal">
-        <div className="modal-dialog modal-dialog-centered modal-sm">
-          <div className="modal-content">
-            <div className="modal-body text-center p-4">
-              <div className="mb-4">
-                <span className="avatar avatar-xxl rounded-circle bg-danger-subtle">
-                  <ImageWithBasePath
-                    src="assets/img/icons/trash-icon.svg"
-                    alt="trash"
-                    className="img-fluid w-auto h-auto"
-                  />
-                </span>
-              </div>
-              <h4 className="mb-1">Delete Confirmation</h4>
-              <p className="mb-4">
-                {pendingDelete
-                  ? `Delete invoice ${pendingDelete.Invoice_ID}?`
-                  : "Select a row to delete."}
-              </p>
-              <div className="d-flex justify-content-center gap-2">
-                <Link
-                  href="#"
-                  className="btn btn-light w-100"
-                  data-bs-dismiss="modal"
-                >
-                  Close
-                </Link>
-                <button
-                  type="button"
-                  className="btn btn-danger w-100"
-                  data-bs-dismiss="modal"
-                  onClick={handleConfirmDelete}
-                  disabled={!pendingDelete}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* End Modal  */}
-      <InvoicesModal />
+      {/* Filter Offcanvas & Detail Modal */}
+      <PaymentsModal
+        selectedPayment={selectedPayment}
+        customersList={customersList}
+        currentFilter={appliedFilters}
+        onApplyFilter={(filters) => setAppliedFilters(filters)}
+        onResetFilter={() =>
+          setAppliedFilters({ customers: [], orderTypes: [], status: "all" })
+        }
+      />
     </>
   );
 };

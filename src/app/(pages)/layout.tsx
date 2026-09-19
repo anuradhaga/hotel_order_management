@@ -13,11 +13,8 @@ import {
 } from "@/redux/sidebarSlice";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import dynamic from "next/dynamic";
+import Header from "@/core/common/header/header";
 import Sidebar from "@/core/common/sidebar/sidebar";
-
-const Header = dynamic(() => import("@/core/common/header/header"), {
-  ssr: false,
-});
 
 const OutletLoader: React.FC = () => (
   <div
@@ -31,7 +28,7 @@ const OutletLoader: React.FC = () => (
 const PageLayouts = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
-  const [isOutletLoading, setIsOutletLoading] = useState(true);
+  const [isOutletLoading, setIsOutletLoading] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { mobileSidebar } = useAppSelector(

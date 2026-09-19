@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F9FAFB"/>
+      <stop offset="100%" stop-color="#EDF2F7"/>
+    </linearGradient>
+    <linearGradient id="plateGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="400" rx="24" fill="url(#bgGrad)"/>
+  
+  <!-- Outer Plate Rim -->
+  <circle cx="200" cy="200" r="130" fill="url(#plateGrad)" stroke="#CBD5E1" stroke-width="3" filter="url(#shadow)"/>
+  <!-- Inner Plate Rim -->
+  <circle cx="200" cy="200" r="95" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2"/>
+  
+  <!-- Cloche / Food Icon -->
+  <g fill="#94A3B8">
+    <!-- Handle -->
+    <circle cx="200" cy="140" r="10" fill="#64748B"/>
+    <!-- Dome -->
+    <path d="M140,210 C140,155 170,148 200,148 C230,148 260,155 260,210 Z" fill="#64748B" opacity="0.85"/>
+    <!-- Plate base line -->
+    <rect x="130" y="212" width="140" height="8" rx="4" fill="#475569"/>
+    <!-- Steam Lines -->
+    <path d="M185,124 Q180,112 187,102" fill="none" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round"/>
+    <path d="M200,120 Q205,108 198,96" fill="none" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round"/>
+    <path d="M215,124 Q220,112 213,102" fill="none" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Bottom Label -->
+  <text x="200" y="270" text-anchor="middle" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="600" letter-spacing="1">NO IMAGE AVAILABLE</text>
+</svg>

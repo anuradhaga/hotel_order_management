@@ -9,24 +9,30 @@ import ImageWithBasePath from "@/core/common/image-with-base-path";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Tooltip } from "antd";
+import { useAuth } from "@/components/authentication/auth-context/authContext";
 
 const PosHeader = () => {
   const { handleUpdateTheme } = useThemeSettings();
   const location = usePathname();
   const { themeSettings } = useThemeSettings();
+  const { user: authUser, logout } = useAuth();
   const mobileSidebar = useAppSelector(
     (state: RootState) => state.sidebar.mobileSidebar
   );
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(authUser);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("authUser");
-      if (stored) {
-        setCurrentUser(JSON.parse(stored));
-      }
-    } catch (e) {}
-  }, []);
+    if (authUser) {
+      setCurrentUser(authUser);
+    } else {
+      try {
+        const stored = localStorage.getItem("authUser");
+        if (stored) {
+          setCurrentUser(JSON.parse(stored));
+        }
+      } catch (e) {}
+    }
+  }, [authUser]);
 
   const handleDarkModeClick = useCallback(() => {
     handleUpdateTheme("data-bs-theme", "light");
@@ -36,27 +42,30 @@ const PosHeader = () => {
   }, [handleUpdateTheme]);
 
   useEffect(() => {
-    const htmlElement = document.documentElement as HTMLElement;
+    if (typeof document === "undefined") return;
+    const htmlElement = document.documentElement;
+    if (!htmlElement) return;
     Object.entries(themeSettings).forEach(([key, value]) => {
-      htmlElement.setAttribute(key as string, String(value));
+      htmlElement.setAttribute?.(key as string, String(value));
     });
   }, [themeSettings]);
 
   useEffect(() => {
-    const htmlElement = typeof document !== "undefined" ? document.documentElement : null;
-    const mainWrapper = typeof document !== "undefined" ? document.querySelector(".main-wrapper") : null;
+    if (typeof document === "undefined") return;
+    const htmlElement = document.documentElement;
+    const mainWrapper = document.querySelector(".main-wrapper");
 
     if (mobileSidebar) {
-      htmlElement?.classList?.add("menu-opened");
-      mainWrapper?.classList?.add("slide-nav");
+      if (htmlElement?.classList) htmlElement.classList.add("menu-opened");
+      if (mainWrapper?.classList) mainWrapper.classList.add("slide-nav");
     } else {
-      htmlElement?.classList?.remove("menu-opened");
-      mainWrapper?.classList?.remove("slide-nav");
+      if (htmlElement?.classList) htmlElement.classList.remove("menu-opened");
+      if (mainWrapper?.classList) mainWrapper.classList.remove("slide-nav");
     }
 
     return () => {
-      htmlElement?.classList?.remove("menu-opened");
-      mainWrapper?.classList?.remove("slide-nav");
+      if (htmlElement?.classList) htmlElement.classList.remove("menu-opened");
+      if (mainWrapper?.classList) mainWrapper.classList.remove("slide-nav");
     };
   }, [mobileSidebar]);
 
@@ -866,7 +875,7 @@ const PosHeader = () => {
                               />
                             </div>
                             <div className="ms-2">
-                              <h5 className="mb-1 fs-14 fw-semibold text-truncate" style={{ maxWidth: 140 }}>
+                              <h5 className="mb-1 fs-14 fw-semibold text-truncate" style={{ maxWidth: 180 }}>
                                 {currentUser?.full_name || "Adrian James"}
                               </h5>
                               <span className="d-block fs-13 text-muted">
@@ -874,7 +883,6 @@ const PosHeader = () => {
                               </span>
                             </div>
                           </div>
-                          <span className="badge badge-soft-success">{currentUser?.outlet_code || "Pro"}</span>
                         </div>
                       </div>
                       <div className="p-3">
@@ -911,17 +919,14 @@ const PosHeader = () => {
                         </Link>
                       </div>
                       <div className="p-3 border-top">
-                        <Link
-                          href={all_routes.login}
-                          onClick={() => {
-                            localStorage.removeItem("authUser");
-                            document.cookie = "gdh_user=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-                          }}
+                        <button
+                          type="button"
+                          onClick={logout}
                           className="btn btn-white btn-sm w-100"
                         >
                           <i className="icon-log-in me-1" />
                           Logout
-                        </Link>
+                        </button>
                       </div>
                     </div>
                   </div>

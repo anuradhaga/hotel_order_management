@@ -13,15 +13,21 @@ export async function GET() {
         i.category_id,
         i.item_code,
         i.item_name,
+        COALESCE(i.item_size, 'Regular') AS item_size,
         i.description,
         i.image_url,
         i.kitchen_dept,
         i.is_spicy,
         i.is_vegetarian,
         i.is_active,
-        ip.selling_price
+        COALESCE(ip.min_price, 1500.00) AS selling_price
       FROM items i
-      LEFT JOIN item_prices ip ON i.item_id = ip.item_id AND ip.is_current = 1
+      LEFT JOIN (
+        SELECT item_id, MIN(selling_price) AS min_price
+        FROM item_prices
+        WHERE is_current = 1
+        GROUP BY item_id
+      ) ip ON i.item_id = ip.item_id
       WHERE i.is_active = 1
       ORDER BY i.category_id ASC, i.item_name ASC
     `);

@@ -534,3 +534,15 @@
 .ant-picker .ant-picker-suffix{
   color: var(--gray-600);
 }
+
+/* Ensure POS Header & Profile Dropdown are cleanly elevated above content */
+.pos-wrapper .header,
+.header {
+  z-index: 1050 !important;
+  position: relative;
+}
+
+.header .dropdown-menu {
+  z-index: 1060 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+}

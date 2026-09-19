@@ -60,16 +60,21 @@ const DynamicRowGroup: React.FC<Props> = ({ groupId }) => {
 
                         <div className="col-lg-5">
                             <label className="form-label">
-                                Price<span className="text-danger"> *</span>
+                                Price (LKR)<span className="text-danger"> *</span>
                             </label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={row.price}
-                                onChange={(e) =>
-                                    updateRow(row.id, "price", e.target.value)
-                                }
-                            />
+                            <div className="input-group">
+                                <span className="input-group-text">LKR</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="form-control"
+                                    placeholder="0.00"
+                                    value={row.price}
+                                    onChange={(e) =>
+                                        updateRow(row.id, "price", e.target.value)
+                                    }
+                                />
+                            </div>
                         </div>
 
                         <div className="col-lg-2 d-flex align-items-center gap-2 mt-4">

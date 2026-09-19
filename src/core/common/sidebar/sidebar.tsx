@@ -8,6 +8,7 @@ import ImageWithBasePath from "../image-with-base-path";
 import { all_routes } from "@/routes/all_routes";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/authentication/auth-context/authContext";
 
 const isRouteMatch = (currentPath: string, targetPath: string) =>
   currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
@@ -38,6 +39,7 @@ const getTabIdByRoute = (path: string) => {
 const Sidebar = () => {
   const location = usePathname();
   const dispatch = useAppDispatch();
+  const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState(
     () => getTabIdByRoute(location) ?? sidebarTabData[0]?.id ?? ""
@@ -781,12 +783,11 @@ const Sidebar = () => {
                           </div>
                           <div className="ms-2">
                             <h5 className="mb-1 fs-14 fw-semibold">
-                              Adrian James
+                              {user?.full_name || user?.username || "Staff Member"}
                             </h5>
-                            <span className="d-block fs-13">Administrator</span>
+                            <span className="d-block fs-13 text-muted">{user?.role_code || "Staff"}</span>
                           </div>
                         </div>
-                        <span className="badge badge-soft-success">Pro</span>
                       </div>
                     </div>
                     <div className="p-3">
@@ -823,13 +824,14 @@ const Sidebar = () => {
                       </Link>
                     </div>
                     <div className="p-3 border-top">
-                      <Link
-                        href={all_routes.login}
+                      <button
+                        type="button"
+                        onClick={logout}
                         className="btn btn-white btn-sm w-100"
                       >
                         <i className="icon-log-in me-1" />
                         Logout
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -28,14 +28,18 @@ export function useMobileSidebarOverlay({
 
     // Skip mobile sidebar logic when on layout-fullwidth AND not on mobile
     if (isLayoutFullwidth && !isMobile) {
-      htmlElement?.classList?.remove("menu-opened");
+      if (htmlElement?.classList) {
+        htmlElement.classList.remove("menu-opened");
+      }
       return;
     }
 
-    if (mobileSidebar) {
-      htmlElement?.classList?.add("menu-opened");
-    } else {
-      htmlElement?.classList?.remove("menu-opened");
+    if (htmlElement?.classList) {
+      if (mobileSidebar) {
+        htmlElement.classList.add("menu-opened");
+      } else {
+        htmlElement.classList.remove("menu-opened");
+      }
     }
   }, [mobileSidebar, isLayoutFullwidth, isMobile]);
 
