@@ -43,6 +43,7 @@ import { all_routes } from "@/routes/all_routes"
         items:[
           { link: routes.table, label: "Tables", icon: "icon-concierge-bell" },
           { link: routes.customer, label: "Customers", icon: "icon-user-round" },
+          { link: routes.events, label: "Special Events", icon: "icon-calendar-event" },
           { link: routes.invoices, label: "Invoices", icon: "icon-file-spreadsheet",relativeLinks: [routes.invoicesDetails] },
           { link: routes.payments, label: "Payments", icon: "icon-badge-dollar-sign" },
         ]

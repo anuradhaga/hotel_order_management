@@ -22,6 +22,7 @@ export const all_routes = {
   // Operations
   table: "/table",
   customer: "/customer",
+  events: "/events",
   invoices: "/invoices",
   invoicesDetails: "/invoices-details",
   payments: "/payments",

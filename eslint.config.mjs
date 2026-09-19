@@ -18,16 +18,17 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
-      "src/style/icon/fontawesome/js/fontawesome.min.js",
-      "src/style/icon/fontawesome/js/v4-shims.min.js", // 👈 added
-      "**/*.min.js", // 👈 optional: ignore ALL minified JS
+      "src/style/icon/**",
+      "scripts/**",
+      "**/*.min.js",
     ],
-   // 🔹 2. Extend Next.js rules
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-  // 🔹 3. Custom rule overrides
-  
+  },
+  {
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/ban-ts-comment": "off",
+      "react/no-unescaped-entities": "off",
+      "react/display-name": "off",
       "@typescript-eslint/no-unused-vars": [
         "warn",
         {

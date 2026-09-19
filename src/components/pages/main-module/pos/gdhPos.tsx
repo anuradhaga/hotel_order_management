@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import { calculateHospitalityTaxes } from "@/lib/taxEngine";
 
 interface MenuItem {
@@ -11,9 +10,12 @@ interface MenuItem {
   item_name: string;
   description?: string;
   kitchen_dept: string;
+  effective_kitchen_dept?: string;
   is_spicy: boolean;
   is_vegetarian: boolean;
   selling_price: number;
+  catalog_price?: number;
+  is_complimentary?: boolean | number;
 }
 
 interface Category {
@@ -57,8 +59,11 @@ interface OutletData {
 }
 
 export default function GdhPosComponent() {
-  // Operating Mode: 'OUTLET_COUNTER' (Mode A) or 'DINE_IN' (Mode B)
-  const [operatingMode, setOperatingMode] = useState<"OUTLET_COUNTER" | "DINE_IN">("OUTLET_COUNTER");
+  // Operating Mode: 'OUTLET_COUNTER' (Mode A), 'DINE_IN' (Mode B), or 'SPECIAL_EVENT' (Mode C)
+  const [operatingMode, setOperatingMode] = useState<"OUTLET_COUNTER" | "DINE_IN" | "SPECIAL_EVENT">("OUTLET_COUNTER");
+  const [events, setEvents] = useState<any[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [activeEvent, setActiveEvent] = useState<any | null>(null);
 
   // Masters
   const [outlets, setOutlets] = useState<OutletData[]>([]);
@@ -104,17 +109,19 @@ export default function GdhPosComponent() {
   // Fetch initial data
   const loadData = async () => {
     try {
-      const [menuRes, outletsRes, tablesRes, usersRes] = await Promise.all([
+      const [menuRes, outletsRes, tablesRes, usersRes, eventsRes] = await Promise.all([
         fetch("/api/menu"),
         fetch("/api/outlets"),
         fetch("/api/tables"),
         fetch("/api/users"),
+        fetch("/api/events?active_only=true"),
       ]);
 
       const menuData = await menuRes.json();
       const outletsData = await outletsRes.json();
       const tablesData = await tablesRes.json();
       const usersData = await usersRes.json();
+      const eventsData = await eventsRes.json();
 
       if (menuData.success) {
         setCategories(menuData.categories);
@@ -126,6 +133,9 @@ export default function GdhPosComponent() {
       if (tablesData.success) {
         setTables(tablesData.data);
       }
+      if (eventsData.success && Array.isArray(eventsData.data)) {
+        setEvents(eventsData.data);
+      }
       if (usersData.success && Array.isArray(usersData.data)) {
         setUsers(usersData.data);
         const defaultWaiter = usersData.data.find((u: any) => u.role_code === "WAITER") || usersData.data[0];
@@ -136,6 +146,51 @@ export default function GdhPosComponent() {
     } catch (err) {
       console.error("Error loading POS master data:", err);
     }
+  };
+
+  const handleSelectEvent = async (event: any) => {
+    setSelectedEventId(event.event_id);
+    setActiveEvent(event);
+    if (event.outlet_id) {
+      setSelectedOutletId(event.outlet_id);
+    }
+    // Load event's customized menu
+    try {
+      const res = await fetch(`/api/events/${event.event_id}/menu`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setItems(
+          data.data.map((em: any) => ({
+            item_id: em.item_id,
+            category_id: em.category_id || 1,
+            item_code: em.item_code,
+            item_name: em.item_name,
+            description: em.description,
+            kitchen_dept: em.effective_kitchen_dept || em.default_kitchen_dept,
+            effective_kitchen_dept: em.effective_kitchen_dept,
+            is_spicy: em.is_spicy,
+            is_vegetarian: em.is_vegetarian,
+            selling_price: em.selling_price,
+            catalog_price: em.catalog_price,
+            is_complimentary: em.is_complimentary,
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Error loading event menu:", err);
+    }
+  };
+
+  const switchToStandardMenu = async () => {
+    setSelectedEventId(null);
+    setActiveEvent(null);
+    try {
+      const res = await fetch("/api/menu");
+      const data = await res.json();
+      if (data.success) {
+        setItems(data.items);
+      }
+    } catch (e) {}
   };
 
   useEffect(() => {
@@ -248,14 +303,23 @@ export default function GdhPosComponent() {
       return;
     }
 
+    if (operatingMode === "SPECIAL_EVENT" && !selectedEventId) {
+      alert("Please select an active special event.");
+      return;
+    }
+
     setSubmitting(true);
     try {
+      const isEventMode = operatingMode === "SPECIAL_EVENT";
+      const resolvedMode = isEventMode ? (selectedTableId ? "DINE_IN" : "OUTLET_COUNTER") : operatingMode;
+
       const payload = {
-        operating_mode: operatingMode,
+        operating_mode: resolvedMode,
         outlet_id: selectedOutletId,
-        table_id: operatingMode === "DINE_IN" ? selectedTableId : null,
-        waiter_user_id: operatingMode === "DINE_IN" ? selectedWaiterId : null,
-        customer_mobile: operatingMode === "OUTLET_COUNTER" ? customerMobile.trim() : null,
+        event_id: isEventMode ? selectedEventId : null,
+        table_id: resolvedMode === "DINE_IN" ? selectedTableId : null,
+        waiter_user_id: resolvedMode === "DINE_IN" ? selectedWaiterId : null,
+        customer_mobile: resolvedMode === "OUTLET_COUNTER" ? (customerMobile.trim() || (isEventMode ? "0770000000" : null)) : null,
         guest_count: guestCount,
         discount_amount: discountAmount,
         notes: orderNotes,
@@ -266,6 +330,7 @@ export default function GdhPosComponent() {
           unit_price: ci.item.selling_price,
           cooking_notes: ci.cooking_notes,
           round_number: ci.round_number,
+          routed_kitchen_dept: ci.item.effective_kitchen_dept || activeEvent?.dedicated_kitchen_dept || undefined,
         })),
       };
 
@@ -283,7 +348,10 @@ export default function GdhPosComponent() {
         // Refresh tables
         loadData();
 
-        if (operatingMode === "DINE_IN") {
+        if (isEventMode) {
+          alert(`🎉 Special Event Order #${resData.data.order_number} successfully dispatched directly to ${activeEvent?.dedicated_kitchen_dept || 'Banquet Kitchen'} for ${activeEvent?.event_name}!`);
+          clearCart();
+        } else if (operatingMode === "DINE_IN") {
           // Direct dispatch confirmation
           alert(`Order #${resData.data.order_number} successfully dispatched to Kitchen Queue for Table ${activeTableInfo?.table_number}!`);
           clearCart();
@@ -410,7 +478,7 @@ export default function GdhPosComponent() {
             </div>
           </div>
 
-          {/* Operating Mode Toggle (Mode A vs Mode B) */}
+          {/* Operating Mode Toggle (Mode A vs Mode B vs Mode C) */}
           <div className="btn-group bg-light p-1 rounded-pill shadow-sm" role="group">
             <button
               type="button"
@@ -418,30 +486,49 @@ export default function GdhPosComponent() {
                 setOperatingMode("OUTLET_COUNTER");
                 setSelectedOutletId(2);
                 setSelectedTableId(null);
+                switchToStandardMenu();
               }}
-              className={`btn rounded-pill px-4 fw-semibold ${
+              className={`btn rounded-pill px-3 fw-semibold ${
                 operatingMode === "OUTLET_COUNTER"
                   ? "btn-warning text-dark shadow"
                   : "btn-light text-secondary"
               }`}
             >
               <i className="ti ti-cup me-1" />
-              Mode A: Fast-Casual Counter (OTP)
+              Mode A: Counter (OTP)
             </button>
             <button
               type="button"
               onClick={() => {
                 setOperatingMode("DINE_IN");
                 setSelectedOutletId(1);
+                switchToStandardMenu();
               }}
-              className={`btn rounded-pill px-4 fw-semibold ${
+              className={`btn rounded-pill px-3 fw-semibold ${
                 operatingMode === "DINE_IN"
                   ? "btn-primary text-white shadow"
                   : "btn-light text-secondary"
               }`}
             >
               <i className="ti ti-tools-kitchen-2 me-1" />
-              Mode B: Restaurant Dine-In (Table)
+              Mode B: Dine-In (Table)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOperatingMode("SPECIAL_EVENT");
+                if (events.length > 0) {
+                  handleSelectEvent(events[0]);
+                }
+              }}
+              className={`btn rounded-pill px-3 fw-semibold ${
+                operatingMode === "SPECIAL_EVENT"
+                  ? "btn-success text-white shadow"
+                  : "btn-light text-secondary"
+              }`}
+            >
+              <i className="ti ti-confetti me-1" />
+              Mode C: Special Event
             </button>
           </div>
 
@@ -463,6 +550,54 @@ export default function GdhPosComponent() {
           </div>
         </div>
       </div>
+
+      {/* Special Event Active Banner */}
+      {operatingMode === "SPECIAL_EVENT" && (
+        <div className="card border-0 shadow-sm mb-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25">
+          <div className="card-body py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div className="d-flex align-items-center gap-3">
+              <span className="badge bg-success text-white px-3 py-2 fs-6 fw-bold rounded-pill">
+                🎪 SPECIAL EVENT MODE
+              </span>
+              <div className="d-flex align-items-center gap-2">
+                <span className="small text-muted fw-bold">Active Event:</span>
+                <select
+                  value={selectedEventId || ""}
+                  onChange={(e) => {
+                    const ev = events.find((x) => x.event_id === Number(e.target.value));
+                    if (ev) handleSelectEvent(ev);
+                  }}
+                  className="form-select form-select-sm fw-bold border-success text-success bg-white rounded-pill px-3"
+                  style={{ minWidth: 260 }}
+                >
+                  {events.map((ev) => (
+                    <option key={ev.event_id} value={ev.event_id}>
+                      {ev.event_name} ({ev.event_code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {activeEvent && (
+              <div className="d-flex flex-wrap align-items-center gap-3">
+                <div className="small text-dark">
+                  📍 <strong>Venue:</strong> {activeEvent.location_name}
+                </div>
+                <div className="small text-dark">
+                  👥 <strong>Pax:</strong> {activeEvent.expected_guests} Covers
+                </div>
+                <span className="badge bg-warning text-dark px-3 py-2 rounded-pill font-monospace fw-bold">
+                  👨‍🍳 Dedicated Kitchen: {activeEvent.dedicated_kitchen_dept}
+                </span>
+                <span className="badge bg-info text-white px-2 py-1 rounded-pill">
+                  {items.length} Custom Menu Items
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Grid: Left (Catalog/Tables), Right (Cart/Taxes/Action) */}
       <div className="row g-3">
@@ -637,7 +772,7 @@ export default function GdhPosComponent() {
                             {itm.item_code}
                           </span>
                           <span className="badge bg-dark bg-opacity-75 text-white" style={{ fontSize: 9 }}>
-                            {itm.kitchen_dept}
+                            {itm.effective_kitchen_dept || itm.kitchen_dept}
                           </span>
                         </div>
 
@@ -648,7 +783,16 @@ export default function GdhPosComponent() {
                           {itm.description || "Signature Grand Dilara culinary creation."}
                         </p>
 
-                        <div className="d-flex gap-1 mb-2">
+                        <div className="d-flex flex-wrap gap-1 mb-2">
+                          {itm.is_complimentary ? (
+                            <span className="badge bg-success text-white small" style={{ fontSize: 9 }}>
+                              🎁 Complimentary
+                            </span>
+                          ) : itm.catalog_price && Number(itm.selling_price) < Number(itm.catalog_price) ? (
+                            <span className="badge bg-success-subtle text-success small" style={{ fontSize: 9 }}>
+                              Special Event Rate
+                            </span>
+                          ) : null}
                           {itm.is_spicy && (
                             <span className="badge bg-danger bg-opacity-10 text-danger small" style={{ fontSize: 9 }}>
                               🌶️ Spicy
@@ -663,9 +807,16 @@ export default function GdhPosComponent() {
                       </div>
 
                       <div className="d-flex justify-content-between align-items-center pt-2 border-top">
-                        <span className="fw-bold text-primary font-monospace fs-14">
-                          LKR {Number(itm.selling_price).toFixed(2)}
-                        </span>
+                        <div>
+                          <span className="fw-bold text-primary font-monospace fs-14">
+                            LKR {Number(itm.selling_price).toFixed(2)}
+                          </span>
+                          {itm.catalog_price && Number(itm.selling_price) < Number(itm.catalog_price) && (
+                            <span className="text-muted text-decoration-line-through small ms-1" style={{ fontSize: 10 }}>
+                              LKR {Number(itm.catalog_price).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
                         <button
                           type="button"
                           onClick={() => addToCart(itm)}

@@ -152,16 +152,6 @@ const Header = () => {
             </div>
           </div>
           <div className="d-flex align-items-center header-list">
-            {/* Upgrade Button */}
-            <div className="header-item d-none d-sm-flex">
-              <Link
-                href="#"
-                className="btn btn-sm btn-primary d-inline-flex align-items-center"
-              >
-                <i className="icon-crown me-1" />
-                Upgrade
-              </Link>
-            </div>
             {/* Search Button */}
             <div className="header-item d-flex">
               <button

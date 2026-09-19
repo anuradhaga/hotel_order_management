@@ -23,6 +23,10 @@ interface KitchenTicket {
   order_status: string;
   pickup_token?: string;
   guest_count: number;
+  event_id?: number | null;
+  event_name?: string | null;
+  event_code?: string | null;
+  dedicated_kitchen_dept?: string | null;
   created_at: string;
   outlet_name: string;
   table_number?: string;
@@ -36,12 +40,27 @@ interface KitchenTicket {
 export default function GdhKitchenComponent() {
   const [tickets, setTickets] = useState<KitchenTicket[]>([]);
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [activeEvents, setActiveEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState<string>("");
 
+  // Load active events for selector
+  useEffect(() => {
+    fetch("/api/events?active_only=true")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setActiveEvents(data.data || []);
+      })
+      .catch((err) => console.error("Error loading events for KDS:", err));
+  }, []);
+
   const fetchTickets = async () => {
     try {
-      const url = selectedDept ? `/api/kds?dept=${selectedDept}` : "/api/kds";
+      let url = "/api/kds?";
+      if (selectedDept) url += `dept=${encodeURIComponent(selectedDept)}&`;
+      if (selectedEventId) url += `event_id=${encodeURIComponent(selectedEventId)}&`;
+
       const res = await fetch(url);
       const data = await res.json();
       if (res.ok && data.success) {
@@ -64,7 +83,7 @@ export default function GdhKitchenComponent() {
       clearInterval(interval);
       clearInterval(clockInterval);
     };
-  }, [selectedDept]);
+  }, [selectedDept, selectedEventId]);
 
   // Status transitions
   const handleUpdateStatus = async (order_id: number, next_status: string) => {
@@ -84,7 +103,8 @@ export default function GdhKitchenComponent() {
 
   const stations = [
     { label: "All Stations", dept: null, icon: "ti-layout-grid" },
-    { label: "Main Kitchen", dept: "MAIN_KITCHEN", icon: "ti-chef-hat" },
+    { label: "Banquet Kitchen", dept: "BANQUET_KITCHEN", icon: "ti-chef-hat" },
+    { label: "Main Kitchen", dept: "MAIN_KITCHEN", icon: "ti-tools-kitchen-2" },
     { label: "Grill Station", dept: "GRILL", icon: "ti-flame" },
     { label: "Pastry & Bakery", dept: "PASTRY", icon: "ti-cake" },
     { label: "Beverage Bar", dept: "BAR", icon: "ti-glass-cocktail" },
@@ -128,8 +148,22 @@ export default function GdhKitchenComponent() {
             ))}
           </div>
 
-          {/* Live Clock & Ticket Stats */}
-          <div className="d-flex align-items-center gap-3">
+          {/* Event Filter & Live Clock */}
+          <div className="d-flex align-items-center gap-2">
+            <select
+              value={selectedEventId || ""}
+              onChange={(e) => setSelectedEventId(e.target.value || null)}
+              className="form-select form-select-sm bg-dark text-warning border-secondary rounded-pill px-3 py-1"
+              style={{ maxWidth: 220, fontSize: 13 }}
+            >
+              <option value="">🎉 All Dining & Events</option>
+              {activeEvents.map((ev) => (
+                <option key={ev.event_id} value={ev.event_id}>
+                  {ev.event_name}
+                </option>
+              ))}
+            </select>
+
             <div className="text-end">
               <span className="badge bg-dark border border-secondary px-3 py-2 font-monospace fs-6">
                 🕒 {currentTime || "Live"}
@@ -211,6 +245,19 @@ export default function GdhKitchenComponent() {
                       <span>#{t.order_number}</span>
                       <span>{t.operating_mode === "DINE_IN" ? `${t.guest_count} Covers • ${t.dining_zone}` : "Counter Pickup"}</span>
                     </div>
+
+                    {t.event_name && (
+                      <div className="mt-2 pt-1 border-top border-white border-opacity-25 d-flex align-items-center justify-content-between">
+                        <span className="badge bg-black bg-opacity-50 text-warning px-2 py-1 font-monospace" style={{ fontSize: 10 }}>
+                          🎉 {t.event_name}
+                        </span>
+                        {t.dedicated_kitchen_dept && (
+                          <span className="badge bg-warning text-dark px-1 py-0" style={{ fontSize: 9 }}>
+                            {t.dedicated_kitchen_dept}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Card Body: Items List */}
