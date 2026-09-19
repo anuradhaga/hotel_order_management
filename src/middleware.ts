@@ -4,10 +4,11 @@ import { getDashboardForRole, isPublicPath } from "@/utils/roleRoutes";
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
-  // 1. Skip Next.js internal assets, public static files, and icons
+  // 1. Skip Next.js internal assets, public static files, uploads, and icons
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/assets") ||
+    pathname.startsWith("/uploads") ||
     pathname === "/favicon.ico" ||
     pathname === "/favicon.png" ||
     pathname.match(/\.(svg|png|jpg|jpeg|gif|webp|css|js|map)$/)

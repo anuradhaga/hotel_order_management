@@ -29,6 +29,7 @@ export interface ItemRecord {
   status?: string;
   Status?: string;
   image?: string;
+  image_url?: string | null;
 }
 
 interface ItemsModalProps {
@@ -95,6 +96,17 @@ const ItemsModal = ({
   const [editing, setEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
+  // Image state for Add modal
+  const [addImageFile, setAddImageFile] = useState<File | null>(null);
+  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
+  const addFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Image state for Edit modal
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
+  const editFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
   // Filter Offcanvas State
   const [filterStatus, setFilterStatus] = useState(currentFilter.status || "all");
   const [filterCat, setFilterCat] = useState(currentFilter.category || "all");
@@ -139,12 +151,69 @@ const ItemsModal = ({
         ]);
       }
 
+      // Handle image preview for Edit modal
+      const rawImg = editingItem.image_url || editingItem.image || "";
+      const isDefault =
+        !rawImg ||
+        rawImg.includes("default-food") ||
+        rawImg.includes("food-");
+      setEditImageUrl(isDefault ? null : rawImg);
+      setEditImagePreview(rawImg || "assets/img/items/default-food.svg");
+      setEditImageFile(null);
+
       setEditDesc(editingItem.description || "");
       setEditIsVeg(editingItem.is_vegetarian ? 1 : 0);
       setEditIsActive(editingItem.is_active !== undefined ? (editingItem.is_active ? 1 : 0) : 1);
       setEditError(null);
     }
   }, [editingItem]);
+
+  // Image handlers for Add modal
+  const handleAddFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setAddError("Selected image exceeds 5MB limit.");
+        return;
+      }
+      setAddImageFile(file);
+      const objectUrl = URL.createObjectURL(file);
+      setAddImagePreview(objectUrl);
+      setAddError(null);
+    }
+  };
+
+  const handleRemoveAddImage = () => {
+    setAddImageFile(null);
+    setAddImagePreview(null);
+    if (addFileInputRef.current) {
+      addFileInputRef.current.value = "";
+    }
+  };
+
+  // Image handlers for Edit modal
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setEditError("Selected image exceeds 5MB limit.");
+        return;
+      }
+      setEditImageFile(file);
+      const objectUrl = URL.createObjectURL(file);
+      setEditImagePreview(objectUrl);
+      setEditError(null);
+    }
+  };
+
+  const handleRemoveEditImage = () => {
+    setEditImageFile(null);
+    setEditImagePreview("assets/img/items/default-food.svg");
+    setEditImageUrl(null);
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = "";
+    }
+  };
 
   // Size row handlers for Add modal
   const handleAddSizeRow = () => {
@@ -216,6 +285,24 @@ const ItemsModal = ({
     setAdding(true);
     setAddError(null);
     try {
+      let finalImageUrl: string | null = null;
+      if (addImageFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", addImageFile);
+        const upRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
+        const upData = await upRes.json();
+        if (upData.success && upData.url) {
+          finalImageUrl = upData.url;
+        } else {
+          setAddError(upData.error || "Failed to upload item image.");
+          setAdding(false);
+          return;
+        }
+      }
+
       const res = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -232,6 +319,7 @@ const ItemsModal = ({
           description: addDesc.trim(),
           is_vegetarian: addIsVeg,
           is_active: addIsActive,
+          image_url: finalImageUrl,
         }),
       });
       const data = await res.json();
@@ -240,6 +328,7 @@ const ItemsModal = ({
         setAddCode("");
         setAddSizes([{ size_name: "Regular", selling_price: "" }]);
         setAddDesc("");
+        handleRemoveAddImage();
         const closeBtn = document.getElementById("close_add_item_btn");
         closeBtn?.click();
         onSuccess?.();
@@ -282,6 +371,24 @@ const ItemsModal = ({
     setEditing(true);
     setEditError(null);
     try {
+      let finalImageUrl = editImageUrl;
+      if (editImageFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", editImageFile);
+        const upRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
+        const upData = await upRes.json();
+        if (upData.success && upData.url) {
+          finalImageUrl = upData.url;
+        } else {
+          setEditError(upData.error || "Failed to upload image.");
+          setEditing(false);
+          return;
+        }
+      }
+
       const res = await fetch("/api/items", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -299,6 +406,7 @@ const ItemsModal = ({
           description: editDesc.trim(),
           is_vegetarian: editIsVeg,
           is_active: editIsActive,
+          image_url: finalImageUrl,
         }),
       });
       const data = await res.json();
@@ -540,6 +648,68 @@ const ItemsModal = ({
                     </select>
                   </div>
 
+                  {/* Item Image Upload Section */}
+                  <div className="col-12">
+                    <label className="form-label fw-semibold fs-13 mb-1">
+                      Item Image
+                    </label>
+                    <div className="d-flex align-items-center gap-3 p-3 bg-light rounded border">
+                      <div
+                        className="position-relative flex-shrink-0"
+                        style={{ width: 75, height: 75 }}
+                      >
+                        <img
+                          src={addImagePreview || "/assets/img/items/default-food.svg"}
+                          alt="Item preview"
+                          className="w-100 h-100 rounded border bg-white object-fit-cover shadow-xs"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "/assets/img/items/default-food.svg";
+                          }}
+                        />
+                      </div>
+                      <div className="flex-grow-1">
+                        <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                          <input
+                            type="file"
+                            ref={addFileInputRef}
+                            accept="image/png, image/jpeg, image/jpg, image/webp"
+                            className="d-none"
+                            onChange={handleAddFileChange}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-white border shadow-xs d-inline-flex align-items-center text-dark"
+                            onClick={() => addFileInputRef.current?.click()}
+                          >
+                            <i className="icon-upload me-1 text-primary" />
+                            {addImagePreview ? "Change Image" : "Upload Image"}
+                          </button>
+                          {addImagePreview && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-white text-danger border shadow-xs d-inline-flex align-items-center"
+                              onClick={handleRemoveAddImage}
+                            >
+                              <i className="icon-trash-2 me-1" />
+                              Remove (Use Default)
+                            </button>
+                          )}
+                        </div>
+                        <p className="fs-12 text-muted mb-0">
+                          {addImageFile ? (
+                            <span className="text-success fw-medium">
+                              <i className="icon-check me-1" />
+                              {addImageFile.name} ({(addImageFile.size / 1024).toFixed(1)} KB)
+                            </span>
+                          ) : (
+                            "JPG, PNG, or WEBP up to 5MB. If not provided, the default image will be shown."
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Size & Price Section */}
                   <div className="col-12">
                     <div className="d-flex align-items-center justify-content-between mb-2">
@@ -724,6 +894,78 @@ const ItemsModal = ({
                       <option value={1}>Active</option>
                       <option value={0}>Inactive</option>
                     </select>
+                  </div>
+
+                  {/* Item Image Upload Section */}
+                  <div className="col-12">
+                    <label className="form-label fw-semibold fs-13 mb-1">
+                      Item Image
+                    </label>
+                    <div className="d-flex align-items-center gap-3 p-3 bg-light rounded border">
+                      <div
+                        className="position-relative flex-shrink-0"
+                        style={{ width: 75, height: 75 }}
+                      >
+                        <img
+                          src={
+                            editImagePreview
+                              ? editImagePreview.startsWith("blob:") || editImagePreview.startsWith("data:")
+                                ? editImagePreview
+                                : editImagePreview.startsWith("/")
+                                ? editImagePreview
+                                : `/${editImagePreview}`
+                              : "/assets/img/items/default-food.svg"
+                          }
+                          alt="Item preview"
+                          className="w-100 h-100 rounded border bg-white object-fit-cover shadow-xs"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "/assets/img/items/default-food.svg";
+                          }}
+                        />
+                      </div>
+                      <div className="flex-grow-1">
+                        <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                          <input
+                            type="file"
+                            ref={editFileInputRef}
+                            accept="image/png, image/jpeg, image/jpg, image/webp"
+                            className="d-none"
+                            onChange={handleEditFileChange}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-white border shadow-xs d-inline-flex align-items-center text-dark"
+                            onClick={() => editFileInputRef.current?.click()}
+                          >
+                            <i className="icon-upload me-1 text-primary" />
+                            {editImagePreview && !editImagePreview.includes("default-food.svg")
+                              ? "Change Image"
+                              : "Upload Image"}
+                          </button>
+                          {editImagePreview && !editImagePreview.includes("default-food.svg") && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-white text-danger border shadow-xs d-inline-flex align-items-center"
+                              onClick={handleRemoveEditImage}
+                            >
+                              <i className="icon-trash-2 me-1" />
+                              Remove (Use Default)
+                            </button>
+                          )}
+                        </div>
+                        <p className="fs-12 text-muted mb-0">
+                          {editImageFile ? (
+                            <span className="text-success fw-medium">
+                              <i className="icon-check me-1" />
+                              {editImageFile.name} ({(editImageFile.size / 1024).toFixed(1)} KB)
+                            </span>
+                          ) : (
+                            "JPG, PNG, or WEBP up to 5MB. If not provided, the default image will be shown."
+                          )}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Size & Price Section */}

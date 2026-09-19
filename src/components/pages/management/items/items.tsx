@@ -27,6 +27,7 @@ export type ItemRow = TableData & {
   category_id?: number;
   description?: string;
   image?: string;
+  image_url?: string | null;
   kitchen_dept?: string;
   is_spicy?: number;
   is_vegetarian?: number;
@@ -75,8 +76,9 @@ const mapItemsToRows = (items: any[]): ItemRow[] =>
     price_raw: Number(item.selling_price || 0),
     Date: item.Date || item.created_at || "—",
     image:
+      item.image_url ||
       item.image ||
-      `assets/img/items/food-${String(((idx) % 16) + 1).padStart(2, "0")}.jpg`,
+      "assets/img/items/default-food.svg",
   }));
 
 const ItemsComponent: React.FC<ItemsComponentProps> = ({ initialData }) => {
@@ -274,11 +276,10 @@ const ItemsComponent: React.FC<ItemsComponentProps> = ({ initialData }) => {
         title: "Item",
         dataIndex: "item",
         render: (text: string, record: ItemRow) => {
-          const imageSrc = record.image
-            ? record.image.startsWith("assets/")
-              ? record.image
-              : `assets/img/items/${record.image}`
-            : "assets/img/items/food-01.jpg";
+          const imageSrc =
+            record.image ||
+            record.image_url ||
+            "assets/img/items/default-food.svg";
 
           return (
             <div className="d-flex align-items-center">
@@ -821,7 +822,7 @@ const ItemsComponent: React.FC<ItemsComponentProps> = ({ initialData }) => {
                             <div className="position-relative mb-3 overflow-hidden rounded">
                               <span className="d-block ratio ratio-16x9">
                                 <ImageWithBasePath
-                                  src={r.image || "assets/img/items/food-01.jpg"}
+                                  src={r.image || "assets/img/items/default-food.svg"}
                                   alt={r.item_name}
                                   className="img-fluid object-fit-cover rounded"
                                 />

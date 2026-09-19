@@ -88,9 +88,10 @@ export async function getItemsServerData(options: GetItemsOptions = {}) {
       i.item_name AS item,
       COALESCE(i.item_size, 'Regular') AS item_size,
       i.description,
+      i.image_url,
       COALESCE(
-        i.image_url, 
-        CONCAT('assets/img/items/food-', LPAD(((i.item_id - 1) % 16) + 1, 2, '0'), '.jpg')
+        NULLIF(i.image_url, ''), 
+        'assets/img/items/default-food.svg'
       ) AS image,
       i.category_id,
       COALESCE(c.category_name, 'General') AS category,
