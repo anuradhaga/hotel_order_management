@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
       category_id,
       selling_price = 0,
       sizes,
+      addons,
       description = "",
       kitchen_dept = "MAIN_KITCHEN",
       is_vegetarian = 0,
@@ -121,6 +122,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Insert addons if provided
+    if (Array.isArray(addons) && addons.length > 0) {
+      for (const ad of addons) {
+        const adName = (ad.addon_name || ad.name || "").trim();
+        if (adName) {
+          const adPrice = parseFloat(ad.price) || 0;
+          const adDesc = (ad.description || "").trim();
+          await pool.query(
+            `INSERT INTO item_addons 
+              (item_id, addon_name, price, description, is_active, created_at)
+             VALUES (?, ?, ?, ?, 1, NOW())`,
+            [newItemId, adName, adPrice, adDesc || null]
+          );
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: "Item created successfully",
@@ -146,6 +164,7 @@ export async function PUT(req: NextRequest) {
       category_id,
       selling_price,
       sizes,
+      addons,
       description,
       kitchen_dept,
       is_vegetarian,
@@ -247,6 +266,26 @@ export async function PUT(req: NextRequest) {
          VALUES (?, ?, ?, NOW(), 1)`,
         [item_id, priceNum, sName]
       );
+    }
+
+    // Update addons if provided
+    if (Array.isArray(addons)) {
+      // Clean up previous addons for this item
+      await pool.query("DELETE FROM item_addons WHERE item_id = ?", [item_id]);
+      // Insert updated addons
+      for (const ad of addons) {
+        const adName = (ad.addon_name || ad.name || "").trim();
+        if (adName) {
+          const adPrice = parseFloat(ad.price) || 0;
+          const adDesc = (ad.description || "").trim();
+          await pool.query(
+            `INSERT INTO item_addons 
+              (item_id, addon_name, price, description, is_active, created_at)
+             VALUES (?, ?, ?, ?, 1, NOW())`,
+            [item_id, adName, adPrice, adDesc || null]
+          );
+        }
+      }
     }
 
     return NextResponse.json({

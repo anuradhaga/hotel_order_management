@@ -8,6 +8,15 @@ export interface ItemSizePrice {
   selling_price: number | string;
 }
 
+export interface ItemAddon {
+  addon_id?: number;
+  item_id?: number;
+  addon_name: string;
+  price: number | string;
+  description?: string;
+  is_active?: number;
+}
+
 export interface ItemRecord {
   item_id?: number;
   id?: string | number;
@@ -23,6 +32,7 @@ export interface ItemRecord {
   price?: string;
   price_raw?: number;
   sizes?: ItemSizePrice[];
+  addons?: ItemAddon[];
   is_vegetarian?: number;
   is_spicy?: number;
   is_active?: number;
@@ -76,6 +86,7 @@ const ItemsModal = ({
   const [addSizes, setAddSizes] = useState<Array<{ size_name: string; selling_price: string }>>([
     { size_name: "Regular", selling_price: "" },
   ]);
+  const [addAddons, setAddAddons] = useState<Array<{ addon_name: string; price: string; description?: string }>>([]);
   const [addDesc, setAddDesc] = useState("");
   const [addIsVeg, setAddIsVeg] = useState(0);
   const [addIsActive, setAddIsActive] = useState(1);
@@ -90,6 +101,7 @@ const ItemsModal = ({
   const [editSizes, setEditSizes] = useState<Array<{ size_name: string; selling_price: string }>>([
     { size_name: "Regular", selling_price: "" },
   ]);
+  const [editAddons, setEditAddons] = useState<Array<{ addon_id?: number; addon_name: string; price: string; description?: string }>>([]);
   const [editDesc, setEditDesc] = useState("");
   const [editIsVeg, setEditIsVeg] = useState(0);
   const [editIsActive, setEditIsActive] = useState(1);
@@ -160,6 +172,22 @@ const ItemsModal = ({
       setEditImageUrl(isDefault ? null : rawImg);
       setEditImagePreview(rawImg || "assets/img/items/default-food.svg");
       setEditImageFile(null);
+
+      if (Array.isArray(editingItem.addons) && editingItem.addons.length > 0) {
+        setEditAddons(
+          editingItem.addons.map((a) => ({
+            addon_id: a.addon_id,
+            addon_name: a.addon_name || "",
+            price:
+              a.price !== undefined && a.price !== null
+                ? String(a.price)
+                : "",
+            description: a.description || "",
+          }))
+        );
+      } else {
+        setEditAddons([]);
+      }
 
       setEditDesc(editingItem.description || "");
       setEditIsVeg(editingItem.is_vegetarian ? 1 : 0);
@@ -257,6 +285,44 @@ const ItemsModal = ({
     );
   };
 
+  // Addon handlers for Add modal
+  const handleAddAddonRow = () => {
+    setAddAddons((prev) => [...prev, { addon_name: "", price: "", description: "" }]);
+  };
+
+  const handleRemoveAddAddonRow = (index: number) => {
+    setAddAddons((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateAddAddon = (
+    index: number,
+    field: "addon_name" | "price" | "description",
+    value: string
+  ) => {
+    setAddAddons((prev) =>
+      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a))
+    );
+  };
+
+  // Addon handlers for Edit modal
+  const handleAddEditAddonRow = () => {
+    setEditAddons((prev) => [...prev, { addon_name: "", price: "", description: "" }]);
+  };
+
+  const handleRemoveEditAddonRow = (index: number) => {
+    setEditAddons((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateEditAddon = (
+    index: number,
+    field: "addon_name" | "price" | "description",
+    value: string
+  ) => {
+    setEditAddons((prev) =>
+      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a))
+    );
+  };
+
   // Handle Add Item Submit
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -279,6 +345,21 @@ const ItemsModal = ({
       ) {
         setAddError(`Please provide a valid price for size "${sz.size_name}".`);
         return;
+      }
+    }
+
+    // Validate addons (if any entered)
+    for (let i = 0; i < addAddons.length; i++) {
+      const ad = addAddons[i];
+      if (ad.addon_name.trim() || ad.price.trim()) {
+        if (!ad.addon_name.trim()) {
+          setAddError(`Addon name is required for addon row ${i + 1}.`);
+          return;
+        }
+        if (ad.price === "" || isNaN(parseFloat(ad.price)) || parseFloat(ad.price) < 0) {
+          setAddError(`Please provide a valid price (>= 0) for addon "${ad.addon_name}".`);
+          return;
+        }
       }
     }
 
@@ -316,6 +397,13 @@ const ItemsModal = ({
             size_name: s.size_name.trim() || "Regular",
             selling_price: parseFloat(s.selling_price) || 0,
           })),
+          addons: addAddons
+            .filter((a) => a.addon_name.trim() !== "")
+            .map((a) => ({
+              addon_name: a.addon_name.trim(),
+              price: parseFloat(a.price) || 0,
+              description: a.description?.trim() || "",
+            })),
           description: addDesc.trim(),
           is_vegetarian: addIsVeg,
           is_active: addIsActive,
@@ -327,6 +415,7 @@ const ItemsModal = ({
         setAddName("");
         setAddCode("");
         setAddSizes([{ size_name: "Regular", selling_price: "" }]);
+        setAddAddons([]);
         setAddDesc("");
         handleRemoveAddImage();
         const closeBtn = document.getElementById("close_add_item_btn");
@@ -368,6 +457,21 @@ const ItemsModal = ({
       }
     }
 
+    // Validate addons (if any entered)
+    for (let i = 0; i < editAddons.length; i++) {
+      const ad = editAddons[i];
+      if (ad.addon_name.trim() || ad.price.trim()) {
+        if (!ad.addon_name.trim()) {
+          setEditError(`Addon name is required for addon row ${i + 1}.`);
+          return;
+        }
+        if (ad.price === "" || isNaN(parseFloat(ad.price)) || parseFloat(ad.price) < 0) {
+          setEditError(`Please provide a valid price (>= 0) for addon "${ad.addon_name}".`);
+          return;
+        }
+      }
+    }
+
     setEditing(true);
     setEditError(null);
     try {
@@ -403,6 +507,14 @@ const ItemsModal = ({
             size_name: s.size_name.trim() || "Regular",
             selling_price: parseFloat(s.selling_price) || 0,
           })),
+          addons: editAddons
+            .filter((a) => a.addon_name.trim() !== "")
+            .map((a) => ({
+              addon_id: a.addon_id,
+              addon_name: a.addon_name.trim(),
+              price: parseFloat(a.price) || 0,
+              description: a.description?.trim() || "",
+            })),
           description: editDesc.trim(),
           is_vegetarian: editIsVeg,
           is_active: editIsActive,
@@ -531,6 +643,43 @@ const ItemsModal = ({
                         </div>
                       )}
                     </div>
+
+                    {/* Addons & Extras Card */}
+                    {viewingItem.addons && viewingItem.addons.length > 0 && (
+                      <div className="my-3 p-3 bg-light rounded border">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                          <span className="text-muted fs-13 fw-semibold">
+                            Addons &amp; Modifiers:
+                          </span>
+                          <span className="badge bg-info-subtle text-info fs-11">
+                            {viewingItem.addons.length} Addon{viewingItem.addons.length > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <div className="d-flex flex-column gap-2">
+                          {viewingItem.addons.map((ad, adIdx) => (
+                            <div
+                              key={adIdx}
+                              className="d-flex align-items-center justify-content-between bg-white p-2 px-3 rounded border"
+                            >
+                              <div>
+                                <span className="fw-semibold text-dark fs-13 d-inline-flex align-items-center">
+                                  <span className="badge bg-success-subtle text-success border border-success-subtle me-2 fs-11">
+                                    + Addon
+                                  </span>
+                                  {ad.addon_name}
+                                </span>
+                                {ad.description && (
+                                  <div className="text-muted fs-11 ms-4 ps-2">{ad.description}</div>
+                                )}
+                              </div>
+                              <span className="fw-bold text-dark font-monospace fs-14">
+                                + LKR {Number(ad.price).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mb-3">
                       <h6 className="fw-semibold fs-13 text-muted mb-1">Description</h6>
@@ -781,6 +930,108 @@ const ItemsModal = ({
                     <small className="text-muted fs-11 mt-1 d-block">
                       Select or enter portion size (e.g. Regular, Small, Large, Full, Half) and its price. Click &ldquo;Add Another Size&rdquo; if this item has multiple portions.
                     </small>
+                  </div>
+
+                  {/* Addons / Modifiers Section */}
+                  <div className="col-12">
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div>
+                        <label className="form-label fw-semibold fs-13 mb-0">
+                          Item Addons / Modifiers (Optional)
+                        </label>
+                        <span className="fs-11 text-muted ms-2">
+                          (e.g. Extra Cheese, Sauces, Dips)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-success py-1 px-2 fs-12 d-inline-flex align-items-center"
+                        onClick={handleAddAddonRow}
+                      >
+                        <i className="icon-plus me-1" /> Add Addon
+                      </button>
+                    </div>
+
+                    {addAddons.length > 0 ? (
+                      <div className="bg-light p-3 rounded border">
+                        {addAddons.map((ad, idx) => (
+                          <div key={idx} className="row g-2 align-items-center mb-2">
+                            <div className="col-sm-5">
+                              <label className="form-label text-muted fs-12 mb-1">
+                                Addon Name <span className="text-danger">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="e.g. Extra Cheese, Garlic Dip"
+                                value={ad.addon_name}
+                                onChange={(e) =>
+                                  handleUpdateAddAddon(idx, "addon_name", e.target.value)
+                                }
+                                required
+                              />
+                            </div>
+                            <div className="col-sm-3">
+                              <label className="form-label text-muted fs-12 mb-1">
+                                Price (LKR) <span className="text-danger">*</span>
+                              </label>
+                              <div className="input-group">
+                                <span className="input-group-text fw-bold fs-12">LKR</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  className="form-control font-monospace"
+                                  placeholder="0.00"
+                                  value={ad.price}
+                                  onChange={(e) =>
+                                    handleUpdateAddAddon(idx, "price", e.target.value)
+                                  }
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div className="col-sm-3">
+                              <label className="form-label text-muted fs-12 mb-1">
+                                Note (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="e.g. 50g slice, Spicy dip"
+                                value={ad.description || ""}
+                                onChange={(e) =>
+                                  handleUpdateAddAddon(idx, "description", e.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="col-sm-1 d-flex align-items-end justify-content-center pt-sm-4">
+                              <button
+                                type="button"
+                                className="btn btn-icon btn-sm btn-white text-danger rounded-circle border shadow-xs"
+                                title="Remove this addon"
+                                onClick={() => handleRemoveAddAddonRow(idx)}
+                              >
+                                <i className="icon-trash-2" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="border border-dashed rounded p-3 text-center bg-white">
+                        <p className="fs-12 text-muted mb-2">
+                          No addons configured for this item.
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-white border text-primary shadow-xs"
+                          onClick={handleAddAddonRow}
+                        >
+                          <i className="icon-plus me-1" /> Add an Addon
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="col-12">
@@ -1039,6 +1290,108 @@ const ItemsModal = ({
                     <small className="text-muted fs-11 mt-1 d-block">
                       Select or enter portion size (e.g. Regular, Small, Large, Full, Half) and its price. Click &ldquo;Add Another Size&rdquo; if this item has multiple portions.
                     </small>
+                  </div>
+
+                  {/* Addons / Modifiers Section */}
+                  <div className="col-12">
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div>
+                        <label className="form-label fw-semibold fs-13 mb-0">
+                          Item Addons / Modifiers (Optional)
+                        </label>
+                        <span className="fs-11 text-muted ms-2">
+                          (e.g. Extra Cheese, Sauces, Dips)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-success py-1 px-2 fs-12 d-inline-flex align-items-center"
+                        onClick={handleAddEditAddonRow}
+                      >
+                        <i className="icon-plus me-1" /> Add Addon
+                      </button>
+                    </div>
+
+                    {editAddons.length > 0 ? (
+                      <div className="bg-light p-3 rounded border">
+                        {editAddons.map((ad, idx) => (
+                          <div key={idx} className="row g-2 align-items-center mb-2">
+                            <div className="col-sm-5">
+                              <label className="form-label text-muted fs-12 mb-1">
+                                Addon Name <span className="text-danger">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="e.g. Extra Cheese, Garlic Dip"
+                                value={ad.addon_name}
+                                onChange={(e) =>
+                                  handleUpdateEditAddon(idx, "addon_name", e.target.value)
+                                }
+                                required
+                              />
+                            </div>
+                            <div className="col-sm-3">
+                              <label className="form-label text-muted fs-12 mb-1">
+                                Price (LKR) <span className="text-danger">*</span>
+                              </label>
+                              <div className="input-group">
+                                <span className="input-group-text fw-bold fs-12">LKR</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  className="form-control font-monospace"
+                                  placeholder="0.00"
+                                  value={ad.price}
+                                  onChange={(e) =>
+                                    handleUpdateEditAddon(idx, "price", e.target.value)
+                                  }
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div className="col-sm-3">
+                              <label className="form-label text-muted fs-12 mb-1">
+                                Note (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="e.g. 50g slice, Spicy dip"
+                                value={ad.description || ""}
+                                onChange={(e) =>
+                                  handleUpdateEditAddon(idx, "description", e.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="col-sm-1 d-flex align-items-end justify-content-center pt-sm-4">
+                              <button
+                                type="button"
+                                className="btn btn-icon btn-sm btn-white text-danger rounded-circle border shadow-xs"
+                                title="Remove this addon"
+                                onClick={() => handleRemoveEditAddonRow(idx)}
+                              >
+                                <i className="icon-trash-2" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="border border-dashed rounded p-3 text-center bg-white">
+                        <p className="fs-12 text-muted mb-2">
+                          No addons configured for this item.
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-white border text-primary shadow-xs"
+                          onClick={handleAddEditAddonRow}
+                        >
+                          <i className="icon-plus me-1" /> Add an Addon
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="col-12">

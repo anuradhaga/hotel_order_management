@@ -22,6 +22,7 @@ export type ItemRow = TableData & {
   item_code: string;
   item_size?: string;
   sizes?: Array<{ price_id?: number; size_name: string; selling_price: number }>;
+  addons?: Array<{ addon_id?: number; addon_name: string; price: number | string; description?: string }>;
   category: string;
   category_name?: string;
   category_id?: number;
@@ -68,6 +69,7 @@ const mapItemsToRows = (items: any[]): ItemRow[] =>
         selling_price: Number(item.selling_price || item.price_raw || 0),
       },
     ],
+    addons: item.addons || [],
     category: item.category_name || item.category || "General",
     Status: item.is_active ? "Active" : "Inactive",
     status: item.is_active ? "Active" : "Inactive",
@@ -302,11 +304,22 @@ const ItemsComponent: React.FC<ItemsComponentProps> = ({ initialData }) => {
                     {text}
                   </span>
                 </h6>
-                {record.item_code && (
-                  <span className="badge bg-light text-muted border fs-11 mt-1">
-                    {record.item_code}
-                  </span>
-                )}
+                <div className="d-flex align-items-center gap-1 flex-wrap mt-1">
+                  {record.item_code && (
+                    <span className="badge bg-light text-muted border fs-11">
+                      {record.item_code}
+                    </span>
+                  )}
+                  {record.addons && record.addons.length > 0 && (
+                    <span
+                      className="badge bg-info-subtle text-info border fs-11"
+                      title={record.addons.map((a: any) => `${a.addon_name} (+LKR ${a.price})`).join(", ")}
+                    >
+                      <i className="icon-circle-plus me-1" />
+                      {record.addons.length} Addon{record.addons.length > 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -861,9 +874,16 @@ const ItemsComponent: React.FC<ItemsComponentProps> = ({ initialData }) => {
                                 {r.item_name}
                               </span>
                             </h6>
-                            <p className="fs-12 text-muted mb-3 font-monospace">
-                              {r.item_code}
-                            </p>
+                            <div className="d-flex align-items-center justify-content-between mb-3">
+                              <span className="fs-12 text-muted font-monospace">
+                                {r.item_code}
+                              </span>
+                              {r.addons && r.addons.length > 0 && (
+                                <span className="badge bg-info-subtle text-info border fs-10">
+                                  +{r.addons.length} Addon{r.addons.length > 1 ? "s" : ""}
+                                </span>
+                              )}
+                            </div>
                             <div className="mt-auto d-flex align-items-center justify-content-between pt-2 border-top">
                               <div>
                                 <span className="badge bg-light text-muted border fs-11 mb-1 d-inline-block">
