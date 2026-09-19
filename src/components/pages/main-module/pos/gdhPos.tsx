@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { calculateHospitalityTaxes } from "@/lib/taxEngine";
 
 interface MenuItem {
   item_id: number;
   category_id: number;
+  category_name?: string;
   item_code: string;
   item_name: string;
   description?: string;
@@ -151,6 +152,7 @@ export default function GdhPosComponent() {
   const handleSelectEvent = async (event: any) => {
     setSelectedEventId(event.event_id);
     setActiveEvent(event);
+    setSelectedCategoryId(null);
     if (event.outlet_id) {
       setSelectedOutletId(event.outlet_id);
     }
@@ -162,7 +164,8 @@ export default function GdhPosComponent() {
         setItems(
           data.data.map((em: any) => ({
             item_id: em.item_id,
-            category_id: em.category_id || 1,
+            category_id: em.category_id ?? 1,
+            category_name: em.category_name,
             item_code: em.item_code,
             item_name: em.item_name,
             description: em.description,
@@ -184,6 +187,7 @@ export default function GdhPosComponent() {
   const switchToStandardMenu = async () => {
     setSelectedEventId(null);
     setActiveEvent(null);
+    setSelectedCategoryId(null);
     try {
       const res = await fetch("/api/menu");
       const data = await res.json();
@@ -272,6 +276,42 @@ export default function GdhPosComponent() {
     subtotal: cartSubtotal,
     discountAmount,
   });
+
+  // Visible categories: in SPECIAL_EVENT mode, strictly show only categories containing event items
+  const displayedCategories = useMemo(() => {
+    if (operatingMode === "SPECIAL_EVENT") {
+      const eventCategoryIds = new Set(
+        items.map((it) => it.category_id).filter((id) => id != null)
+      );
+      const matched = categories.filter((c) => eventCategoryIds.has(c.category_id));
+      if (matched.length === 0 && items.length > 0) {
+        const catMap = new Map<number, Category>();
+        items.forEach((it: any) => {
+          if (it.category_id && !catMap.has(it.category_id)) {
+            catMap.set(it.category_id, {
+              category_id: it.category_id,
+              category_name: it.category_name || `Category ${it.category_id}`,
+              category_code: "",
+              icon_class: "",
+            });
+          }
+        });
+        return Array.from(catMap.values());
+      }
+      return matched;
+    }
+    return categories;
+  }, [operatingMode, items, categories]);
+
+  // Clear category filter if active category does not exist in displayedCategories
+  useEffect(() => {
+    if (selectedCategoryId !== null) {
+      const exists = displayedCategories.some((c) => c.category_id === selectedCategoryId);
+      if (!exists) {
+        setSelectedCategoryId(null);
+      }
+    }
+  }, [displayedCategories, selectedCategoryId]);
 
   // Filter items
   const filteredItems = items.filter((itm) => {
@@ -486,6 +526,7 @@ export default function GdhPosComponent() {
                 setOperatingMode("OUTLET_COUNTER");
                 setSelectedOutletId(2);
                 setSelectedTableId(null);
+                setSelectedCategoryId(null);
                 switchToStandardMenu();
               }}
               className={`btn rounded-pill px-3 fw-semibold ${
@@ -502,6 +543,7 @@ export default function GdhPosComponent() {
               onClick={() => {
                 setOperatingMode("DINE_IN");
                 setSelectedOutletId(1);
+                setSelectedCategoryId(null);
                 switchToStandardMenu();
               }}
               className={`btn rounded-pill px-3 fw-semibold ${
@@ -517,13 +559,14 @@ export default function GdhPosComponent() {
               type="button"
               onClick={() => {
                 setOperatingMode("SPECIAL_EVENT");
+                setSelectedCategoryId(null);
                 if (events.length > 0) {
                   handleSelectEvent(events[0]);
                 }
               }}
               className={`btn rounded-pill px-3 fw-semibold ${
                 operatingMode === "SPECIAL_EVENT"
-                  ? "btn-success text-white shadow"
+                  ? "btn-primary text-white shadow"
                   : "btn-light text-secondary"
               }`}
             >
@@ -553,49 +596,47 @@ export default function GdhPosComponent() {
 
       {/* Special Event Active Banner */}
       {operatingMode === "SPECIAL_EVENT" && (
-        <div className="card border-0 shadow-sm mb-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25">
-          <div className="card-body py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div className="d-flex align-items-center gap-3">
-              <span className="badge bg-success text-white px-3 py-2 fs-6 fw-bold rounded-pill">
-                🎪 SPECIAL EVENT MODE
-              </span>
-              <div className="d-flex align-items-center gap-2">
-                <span className="small text-muted fw-bold">Active Event:</span>
-                <select
-                  value={selectedEventId || ""}
-                  onChange={(e) => {
-                    const ev = events.find((x) => x.event_id === Number(e.target.value));
-                    if (ev) handleSelectEvent(ev);
-                  }}
-                  className="form-select form-select-sm fw-bold border-success text-success bg-white rounded-pill px-3"
-                  style={{ minWidth: 260 }}
-                >
-                  {events.map((ev) => (
-                    <option key={ev.event_id} value={ev.event_id}>
-                      {ev.event_name} ({ev.event_code})
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <div className="alert alert-primary shadow-xs mb-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div className="d-flex align-items-center gap-3">
+            <span className="badge bg-primary text-white px-2 py-1 fs-12 fw-bold">
+              Special Event Mode
+            </span>
+            <div className="d-flex align-items-center gap-2">
+              <span className="small fw-semibold">Active Event:</span>
+              <select
+                value={selectedEventId || ""}
+                onChange={(e) => {
+                  const ev = events.find((x) => x.event_id === Number(e.target.value));
+                  if (ev) handleSelectEvent(ev);
+                }}
+                className="form-select form-select-sm fw-semibold bg-white"
+                style={{ minWidth: 260 }}
+              >
+                {events.map((ev) => (
+                  <option key={ev.event_id} value={ev.event_id}>
+                    {ev.event_name} ({ev.event_code})
+                  </option>
+                ))}
+              </select>
             </div>
-
-            {activeEvent && (
-              <div className="d-flex flex-wrap align-items-center gap-3">
-                <div className="small text-dark">
-                  📍 <strong>Venue:</strong> {activeEvent.location_name}
-                </div>
-                <div className="small text-dark">
-                  👥 <strong>Pax:</strong> {activeEvent.expected_guests} Covers
-                </div>
-                <span className="badge bg-warning text-dark px-3 py-2 rounded-pill font-monospace fw-bold">
-                  👨‍🍳 Dedicated Kitchen: {activeEvent.dedicated_kitchen_dept}
-                </span>
-                <span className="badge bg-info text-white px-2 py-1 rounded-pill">
-                  {items.length} Custom Menu Items
-                </span>
-              </div>
-            )}
           </div>
+
+          {activeEvent && (
+            <div className="d-flex flex-wrap align-items-center gap-3">
+              <div className="small text-dark">
+                <strong>Venue:</strong> {activeEvent.location_name}
+              </div>
+              <div className="small text-dark">
+                <strong>Pax:</strong> {activeEvent.expected_guests} Covers
+              </div>
+              <span className="badge badge-soft-warning">
+                Dedicated Kitchen: {activeEvent.dedicated_kitchen_dept}
+              </span>
+              <span className="badge badge-soft-info">
+                {items.length} Custom Items
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -734,18 +775,21 @@ export default function GdhPosComponent() {
                 >
                   All Items ({items.length})
                 </button>
-                {categories.map((c) => (
-                  <button
-                    key={c.category_id}
-                    type="button"
-                    onClick={() => setSelectedCategoryId(c.category_id)}
-                    className={`btn btn-sm rounded-pill px-3 fw-semibold text-nowrap ${
-                      selectedCategoryId === c.category_id ? "btn-dark" : "btn-light text-secondary"
-                    }`}
-                  >
-                    {c.category_name}
-                  </button>
-                ))}
+                {displayedCategories.map((c) => {
+                  const catItemCount = items.filter((it) => it.category_id === c.category_id).length;
+                  return (
+                    <button
+                      key={c.category_id}
+                      type="button"
+                      onClick={() => setSelectedCategoryId(c.category_id)}
+                      className={`btn btn-sm rounded-pill px-3 fw-semibold text-nowrap ${
+                        selectedCategoryId === c.category_id ? "btn-dark" : "btn-light text-secondary"
+                      }`}
+                    >
+                      {c.category_name} ({catItemCount})
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="input-group input-group-sm" style={{ width: 220 }}>
